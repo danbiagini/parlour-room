@@ -12,11 +12,6 @@ export default class GameScene extends Scene {
     preload() {
         let imageDir = "PNG-cards-1.3";
 
-        for (let suite in Suit) {
-            for (let rank in Rank) {
-                this.deck.push(new )
-            }
-        }
         this.load.image('ace-hearts', 'PNG-cards-1.3/ace_of_hearts.png')
         this.load.image('ace-spades', 'PNG-cards-1.3/ace_of_spades.png')
         this.load.image('ace-diamonds', 'PNG-cards-1.3/ace_of_diamonds.png')

@@ -1,19 +1,18 @@
 {
-	"name": "phaser3-parcel-template",
+	"name": "pandemic-poker-client",
 	"version": "1.0.0",
-	"description": "A template project for Phaser3 using Parceljs",
+	"description": "A frontend poker game using Phaser3 built with Parceljs",
 	"scripts": {
 		"start": "parcel src/index.html -p 8000",
 		"build": "parcel build src/index.html --out-dir dist",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
-	"author": "supertommy",
-	"license": "MIT",
+	"author": "danbiagini",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/ourcade/phaser3-parcel-template.git"
+		"url": "https://github.com/danbiagini/pandemic-poker.git"
 	},
-	"homepage": "https://github.com/ourcade/phaser3-parcel-template",
+	"homepage": "https://github.com/danbiagini/pandemic-poker",
 	"devDependencies": {
 		"minimist": ">=1.2.2",
 		"parcel-plugin-clean-easy": "^1.0.2",
