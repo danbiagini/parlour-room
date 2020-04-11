@@ -1,5 +1,6 @@
 import { Scene, GameObjects } from "phaser"
 import { Card, Deck, StandardDeckFactory, Rank, Suit, CardFace } from '../helpers/Card'
+// import { ParlourZone } from '../helpers/Zone'
 
 export default class GameScene extends Scene {
     private dealText: GameObjects.Text;
@@ -31,10 +32,10 @@ export default class GameScene extends Scene {
         
 
         let self = this;
-        this.deck["ace-hearts"].render(300, 300);
-        this.deck["ace-spades"].render(340, 300);
-        this.deck["ace-diamonds"].render(380, 300);
-        this.deck["ace-clubs"].render(420, 300);
+        this.deck["ace-hearts"].render({ x: 300, y: 300 });
+        this.deck["ace-spades"].render({ x: 340, y: 300 });
+        this.deck["ace-diamonds"].render({ x: 380, y: 300 });
+        this.deck["ace-clubs"].render({ x: 420, y: 300 });
 
 
         this.dealText.on('pointerdown', function () {

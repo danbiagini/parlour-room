@@ -15,6 +15,7 @@ export enum Jokers {
 }
 
 export enum Rank {
+    NONE,
     ACE,
     TWO,
     THREE,
@@ -39,20 +40,19 @@ export interface CardFace {
 export class Card {
 
     private image: GameObjects.Image = undefined;
-    private myScene: Scene = undefined;
 
     render(x: number, y: number) {
         this.image = this.scene.add.image(x, y, this.key).setScale(0.3).setInteractive();
-        this.myScene.input.setDraggable(this.image);
+        this.scene.input.setDraggable(this.image);
         console.log("rendering " + this.key + " at " + x + "," + y);
     }
+
 
     constructor(readonly suit: Suit, readonly rank: Rank,
                 private scene: Scene, private key: string,
                 private imagePath: string, x?: number, y?: number) {
 
-        this.myScene = scene;
-        this.myScene.load.image(this.key, imagePath);
+        this.scene.load.image(this.key, imagePath);
         console.log("created card:" + this.key + " imagePath:" + imagePath +
                     ", S:" + suit + ", R:" + rank);
         if (x && y) {
@@ -96,6 +96,7 @@ export function StandardDeckFactory(imagePath: string, scene: Scene, jokers = 0)
                             rankName = "king";
                             break;
                         case Rank.JOKER:
+                        case Rank.NONE:
                             continue;
                         default:
                             rankName = rn.toString();
@@ -105,7 +106,6 @@ export function StandardDeckFactory(imagePath: string, scene: Scene, jokers = 0)
                     let key = rankName + "-" + suitName;
                     console.log("adding " + key + " to deck.");
                     d[key] = new Card(sn, rn, scene, key, image);
-                    //console.log("New card at " + key + ": " + JSON.stringify(d[key]));
                 }
             }
         }
