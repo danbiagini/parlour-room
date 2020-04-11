@@ -114,7 +114,7 @@ export function StandardDeckFactory(imagePath: string, scene: Scene, jokers = 0)
     // Any jokers in this deck?
     for (let j = 0; j < jokers; j++) {
         let rankName = "joker";
-        let jokerVariant = Jokers[j];
+        let jokerVariant = Jokers[j].toLowerCase();
         let image = imagePath + "/" + jokerVariant + "_joker.png";
         let key = jokerVariant + "-joker";
         console.log("adding " + key + " to deck.");
