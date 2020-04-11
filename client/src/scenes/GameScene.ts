@@ -1,9 +1,9 @@
 import { Scene, GameObjects } from "phaser"
-import { Card, Rank, Suit, CardFace } from '../helpers/Card'
+import { Card, Deck, StandardDeckFactory, Rank, Suit, CardFace } from '../helpers/Card'
 
 export default class GameScene extends Scene {
     private dealText: GameObjects.Text;
-    private deck: Card[];
+    private deck: Deck;
 
     constructor() {
         super('Game');
@@ -11,15 +11,15 @@ export default class GameScene extends Scene {
 
     preload() {
         let imageDir = "PNG-cards-1.3";
-
-        this.load.image('ace-hearts', 'PNG-cards-1.3/ace_of_hearts.png')
-        this.load.image('ace-spades', 'PNG-cards-1.3/ace_of_spades.png')
-        this.load.image('ace-diamonds', 'PNG-cards-1.3/ace_of_diamonds.png')
-        this.load.image('ace-clubs', 'PNG-cards-1.3/ace_of_clubs.png')
+        this.deck = StandardDeckFactory(imageDir, this);
+        console.log("Created deck with " + Object.keys(this.deck).length + " cards.")
     }
 
     dealCards() {
-
+        // for (let i = 0; i < 5; i++) {
+        //     let playerCard = new Card();
+        //     playerCard.render(475 + (i * 100), 650, 'cyanCardFront');
+        // }
     }
 
     create() {
@@ -31,25 +31,11 @@ export default class GameScene extends Scene {
         
 
         let self = this;
-        let cards: Array<Card> = []
-        cards.push(
-            new Card({
-                suit: Suit.HEARTS,
-                rank: Rank.ACE
-            }, self, 300, 300),
-            new Card({
-                suit: Suit.CLUBS,
-                rank: Rank.ACE
-            }, self, 340, 300),
-            new Card({
-                suit: Suit.SPADES,
-                rank: Rank.ACE
-            }, self, 380, 300),
-            new Card({
-                suit: Suit.DIAMONDS,
-                rank: Rank.ACE
-            }, self, 420, 300));
-        
+        this.deck["ace-hearts"].render(300, 300);
+        this.deck["ace-spades"].render(340, 300);
+        this.deck["ace-diamonds"].render(380, 300);
+        this.deck["ace-clubs"].render(420, 300);
+
 
         this.dealText.on('pointerdown', function () {
             self.dealCards();
