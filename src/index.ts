@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const port = process.env.SERVER_PORT;
+const port = process.env.PORT;
 const app: express.Application = express();
 
 // Configure Express to use EJS
