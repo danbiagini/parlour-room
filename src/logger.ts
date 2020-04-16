@@ -6,8 +6,8 @@ export const logger = createLogger({
         format.json()
     ),
     transports: [
-        new transports.Console(),
-        new transports.File({ filename: 'logs/error/error.log', level: 'error' }),
-        new transports.File({ filename: 'logs/activity/activity.log', level: 'info' })
+        new transports.Console({level: 'debug'})
+        // new transports.File({ filename: 'logs/error/error.log', level: 'error' }),
+        // new transports.File({ filename: 'logs/activity/activity.log', level: 'info' })
     ]
 });
