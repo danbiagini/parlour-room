@@ -9,37 +9,32 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 
+    <!-- **********************************************
+         * TODO(DEVELOPER): Use your Client ID below. *
+         ********************************************** -->
+    <!-- <meta name="google-signin-client_id" content="236537749378-pulij6j272kd3gcs13hljtu9k9283kht.apps.googleusercontent.com">
+    <meta name="google-signin-cookiepolicy" content="single_host_origin">
+    <meta name="google-signin-scope" content="profile email"> -->
+
 </head>
 
 <body>
     <div class="container">
-        <h1 class="header">Pandemic Parlour</h1>
+        <h1 class="header">Pandemic Parlor</h1>
         <a class="btn" href="/games"><i class="material-icons right">arrow_forward</i>Get started!</a>
+        <% if (authUrl) {  %>
+            <a class="btn" href="<%-authUrl%>"><i class="material-icons left">arrow_forward</i>Login with Google</a>
+        <% } %>
     </div>
 
-    <!-- The core Firebase JS SDK is always required and must be listed first -->
-    <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-app.js"></script>
-    
-    <!-- TODO: Add SDKs for Firebase products that you want to use
-         https://firebase.google.com/docs/web/setup#available-libraries -->
-    <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-analytics.js"></script>
-    
-    <script>
-        // Your web app's Firebase configuration
-        var firebaseConfig = {
-            apiKey: "AIzaSyDvQmnFVhnz-_nK0HMPvu1tJhqQ1uRwg84",
-            authDomain: "pandemicparlour.firebaseapp.com",
-            databaseURL: "https://pandemicparlour.firebaseio.com",
-            projectId: "pandemicparlour",
-            storageBucket: "pandemicparlour.appspot.com",
-            messagingSenderId: "236537749378",
-            appId: "1:236537749378:web:29f7268ebb30b39f1ef99b",
-            measurementId: "G-TB9BSXCS7G"
-        };
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        firebase.analytics();
-    </script>
+    <div class="content">
+        <% if (userFullName) { %>
+            <h3 class="header">Welcome <%-userFullName%> ! </h3>
+        <% } else { %>
+            <h3 class="header">Welcome friend!</h3>
+        <% } %>
+    </div>
+
 </body>
 
 </html>

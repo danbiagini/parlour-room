@@ -11,7 +11,7 @@
     "tsc": "tsc",
     "build": "npm-run-all clean lint tsc copy-assets",
     "dev:start": "npm-run-all build start",
-    "dev": "nodemon --watch src -e ts,ejs --exec npm run dev:start",
+    "dev": "nodemon --watch src -e ts,ejs,env --delay 5 --exec npm run dev:start",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node ."
   },
@@ -33,10 +33,13 @@
   },
   "homepage": "https://github.com/danbiagini/pandemic-parlour#readme",
   "dependencies": {
+    "axios": "^0.19.2",
     "dotenv": "^8.2.0",
     "ejs": "^3.0.2",
     "express": "^4.17.1",
-    "googleapis": "^48.0.0"
+    "firebase": "^7.14.0",
+    "googleapis": "^48.0.0",
+    "winston": "^3.2.1"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.0",
