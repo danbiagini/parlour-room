@@ -9,8 +9,11 @@ dotenv.config();
 import { urlGoogle, getAccessTokenFromCode, getGoogleUser } from "./google_utils.js";
 import { url } from "inspector";
 
+let port = 8080;
+if (process.env.PORT) {
+    port = +process.env.PORT; // unary '+' => typescript for convert to number
+}
 
-const port = process.env.PORT;
 const app: express.Application = express();
 
 // set up logger middleware for request logging
