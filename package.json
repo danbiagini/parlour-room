@@ -9,7 +9,7 @@
     "lint": "tslint -c tslint.json -p tsconfig.json --fix",
     "tsc": "tsc",
     "build": "npm-run-all clean lint tsc copy-assets",
-    "gcp-build": "npm-run-all build",
+    "gcp-build": "npm-run-all build sec2env",
     "dev:start": "npm-run-all build start",
     "dev": "nodemon --watch src -e ts,ejs,env --delay 5 --exec npm run dev:start",
     "test": "echo \"Error: no test specified\" && exit 1",
