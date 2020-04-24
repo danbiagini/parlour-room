@@ -3,6 +3,7 @@ import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import * as googleprotos from '@google-cloud/secret-manager/build/protos/protos';
 import { appendFileSync } from 'fs-extra';
 import dotenv from 'dotenv';
+import { exit } from 'shelljs';
 
 const client = new SecretManagerServiceClient();
 
@@ -65,9 +66,15 @@ getProjectSecrets().
                     } else {
                         appendFileSync(env, `${secretName}=${value}\n`);
                     }
-                // tslint:disable-next-line: no-console
-                }).catch((error) => console.error("fetching secret failed:" + error));
+                }).catch((error) => {
+                    // tslint:disable-next-line: no-console
+                    console.error("fetching secret failed:" + error);
+                    exit(1);
+                });
         });
     }).
-    // tslint:disable-next-line: no-console
-    catch((error) => console.error("couldn't get project secrets:" + error));
+    catch((error) => {
+        // tslint:disable-next-line: no-console
+        console.error("couldn't get project secrets:" + error)
+        exit(2);
+    });
