@@ -44,6 +44,7 @@ export class Card {
     render(x: number, y: number) {
         this.image = this.scene.add.image(x, y, this.key).setScale(0.3).setInteractive();
         this.scene.input.setDraggable(this.image);
+        // tslint:disable-next-line: no-console
         console.log("rendering " + this.key + " at " + x + "," + y);
     }
 
@@ -53,6 +54,7 @@ export class Card {
                 private imagePath: string, x?: number, y?: number) {
 
         this.scene.load.image(this.key, imagePath);
+        // tslint:disable-next-line: no-console
         console.log("created card:" + this.key + " imagePath:" + imagePath +
                     ", S:" + suit + ", R:" + rank);
         if (x && y) {
@@ -68,20 +70,22 @@ export interface Deck {
 
 export function StandardDeckFactory(imagePath: string, scene: Scene, jokers = 0) {
 
-    let d: Deck = {};
+    const d: Deck = {};
 
     // The typescript string enum is tricky.  TS allows you to define finite sets of discrete
     // items using enum, but doesn't support iteration across the type.
-    for (let s in Suit) {
+    // tslint:disable-next-line: forin
+    for (const s in Suit) {
         const sn = Number(s);
         if (!isNaN(sn)) {
-            if (sn == Suit.NONE) {
+            if (sn === Suit.NONE) {
                 continue;
             }
-            for (let r in Rank) {
+            // tslint:disable-next-line: forin
+            for (const r in Rank) {
                 const rn = Number(r);
                 if (!isNaN(rn)) {
-                    let rankName: string = undefined;
+                    let rankName: string;
                     switch (rn) {
                         case Rank.ACE:
                             rankName = "ace";
@@ -101,9 +105,10 @@ export function StandardDeckFactory(imagePath: string, scene: Scene, jokers = 0)
                         default:
                             rankName = rn.toString();
                     }
-                    let suitName = Suit[s].toLowerCase();
-                    let image = imagePath + "/" + rankName + "_of_" + suitName + ".png";
-                    let key = rankName + "-" + suitName;
+                    const suitName = Suit[s].toLowerCase();
+                    const image = imagePath + "/" + rankName + "_of_" + suitName + ".png";
+                    const key = rankName + "-" + suitName;
+                    // tslint:disable-next-line: no-console
                     console.log("adding " + key + " to deck.");
                     d[key] = new Card(sn, rn, scene, key, image);
                 }
@@ -113,10 +118,11 @@ export function StandardDeckFactory(imagePath: string, scene: Scene, jokers = 0)
 
     // Any jokers in this deck?
     for (let j = 0; j < jokers; j++) {
-        let rankName = "joker";
-        let jokerVariant = Jokers[j].toLowerCase();
-        let image = imagePath + "/" + jokerVariant + "_joker.png";
-        let key = jokerVariant + "-joker";
+        const rankName = "joker";
+        const jokerVariant = Jokers[j].toLowerCase();
+        const image = imagePath + "/" + jokerVariant + "_joker.png";
+        const key = jokerVariant + "-joker";
+        // tslint:disable-next-line: no-console
         console.log("adding " + key + " to deck.");
         d[key] = new Card(Suit.NONE, Rank.JOKER, scene, key, image);
     }

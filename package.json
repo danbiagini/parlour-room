@@ -8,13 +8,14 @@
     "copy-assets": "ts-node tools/copyAssets",
     "lint": "tslint -c tslint.json -p tsconfig.json --fix",
     "tsc": "tsc",
-    "build": "npm-run-all clean lint tsc copy-assets",
+    "build": "npm-run-all clean lint tsc copy-assets client-build",
     "gcp-build": "npm-run-all build sec2env",
     "dev:start": "npm-run-all build start",
     "dev": "nodemon --watch src -e ts,ejs,env --delay 5 --exec npm run dev:start",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node .",
-    "sec2env": "ts-node tools/gcpSecrets"
+    "sec2env": "ts-node tools/gcpSecrets",
+    "client-build": "parcel build client/src/oldmaid.html --out-dir dist/public"
   },
   "repository": {
     "type": "git",
@@ -40,7 +41,8 @@
     "express": "^4.17.1",
     "firebase": "^7.14.0",
     "googleapis": "^48.0.0",
-    "winston": "^3.2.1"
+    "winston": "^3.2.1",
+    "ws": "^7.2.3"
   },
   "devDependencies": {
     "@google-cloud/secret-manager": "^3.0.0",
@@ -49,6 +51,7 @@
     "@types/fs-extra": "^8.1.0",
     "@types/node": "^13.11.1",
     "@types/shelljs": "^0.8.7",
+    "@types/ws": "^7.2.4",
     "fs-extra": "^9.0.0",
     "nodemon": "^2.0.3",
     "npm-run-all": "^4.1.5",
@@ -57,5 +60,9 @@
     "ts-node": "^8.8.2",
     "tslint": "^6.1.1",
     "typescript": "^3.8.3"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.1",
+    "utf-8-validate": "^5.0.2"
   }
 }

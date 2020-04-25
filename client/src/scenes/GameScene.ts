@@ -11,8 +11,9 @@ export default class GameScene extends Scene {
     }
 
     preload() {
-        let imageDir = "PNG-cards-1.3";
+        const imageDir = "PNG-cards-1.3";
         this.deck = StandardDeckFactory(imageDir, this);
+        // tslint:disable-next-line: no-console
         console.log("Created deck with " + Object.keys(this.deck).length + " cards.")
     }
 
@@ -29,36 +30,35 @@ export default class GameScene extends Scene {
             .setFontFamily('Trebuchet MS')
             .setColor('#00ffff')
             .setInteractive();
-        
 
-        let self = this;
-        this.deck["ace-hearts"].render({ x: 300, y: 300 });
-        this.deck["ace-spades"].render({ x: 340, y: 300 });
-        this.deck["ace-diamonds"].render({ x: 380, y: 300 });
-        this.deck["ace-clubs"].render({ x: 420, y: 300 });
+        const self = this;
+        this.deck["ace-hearts"].render(300, 300);
+        this.deck["ace-spades"].render(340, 300 );
+        this.deck["ace-diamonds"].render(380, 300);
+        this.deck["ace-clubs"].render(420, 300);
 
 
-        this.dealText.on('pointerdown', function () {
+        this.dealText.on('pointerdown', () => {
             self.dealCards();
         })
 
-        this.dealText.on('pointerover', function () {
+        this.dealText.on('pointerover', () => {
             self.dealText.setColor('#ff69b4');
         })
 
-        this.dealText.on('pointerout', function () {
+        this.dealText.on('pointerout', () => {
             self.dealText.setColor('#00ffff');
         })
 
-        this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
+        this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
             gameObject.x = dragX;
             gameObject.y = dragY;
         })
 
     }
 
-    update() {
+    // update() {
 
-    }
+    // }
 
 }

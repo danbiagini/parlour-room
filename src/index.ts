@@ -2,7 +2,9 @@ import express from "express";
 import path from "path";
 import dotenv from "dotenv";
 import { transports, format, createLogger } from "winston";
-import {logger} from "./logger";
+import { logger } from "./logger";
+import WebSocket from "ws";
+import http from "http";
 
 dotenv.config();
 
@@ -15,6 +17,8 @@ if (process.env.PORT) {
 }
 
 const app: express.Application = express();
+
+app.use(express.static(path.join(__dirname, 'public')));
 
 // set up logger middleware for request logging
 app.use((req, res, done) => {
@@ -75,7 +79,40 @@ app.get("/auth/google", (req, res) => {
     }
 });
 
+
+
 // start the express server
-app.listen(port, () => {
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ noServer: true });
+
+server.on('upgrade', (req, socket, head) => {
+    logger.silly("Got an upgrade request");
+    const pathName = req.url;
+    if (pathName === '/socket') {
+        wss.handleUpgrade(req, socket, head, (ws) => {
+            wss.emit('connection', ws, req);
+        });
+    } else {
+        logger.info("No websocket listener on " + req.url);
+    }
+});
+
+wss.on('connection', (sock, request) => {
+    logger.info("Connection received:" + request.url);
+
+    sock.on('message', (message) => {
+        logger.info(`Received message ${message}`);
+    });
+
+    sock.on('close', (event: CloseEvent) => {
+        logger.info("connection closed, reason:" + event.code);
+    });
+});
+
+wss.on('close', () => {
+    logger.info("Websocket server closed");
+});
+
+server.listen(port, () => {
     logger.info(`server started at http://localhost:${port}`);
 });
