@@ -44,7 +44,17 @@ export default class OldMaid extends Scene {
     }
 
     connectSocket() {
-        const wsUri = "ws://localhost:8080/socket";
+        const loc = window.location;
+        let wsUri;
+        if (loc.protocol === "https:") {
+            wsUri = "wss:";
+        } else {
+            wsUri = "ws:";
+        }
+
+        wsUri += "//" + loc.host + "/socket";
+
+        // const wsUri = "ws:/socket";
         this.ws = new WebSocket(wsUri);
         this.ws.onopen = (evt) => { this.onOpen(evt) };
         this.ws.onclose = (evt) => { this.onClose(evt) };
