@@ -2,7 +2,7 @@
   "name": "pandemic-parlour",
   "version": "1.0.0",
   "description": "Parlour games for families and friends",
-  "main": "dist/main.js",
+  "main": "dist/src/main.js",
   "scripts": {
     "clean": "rimraf dist/*",
     "copy-assets": "ts-node tools/copyAssets",
