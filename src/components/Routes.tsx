@@ -6,7 +6,7 @@ import NotFound from "./NotFound";
 import Login from "./Login";
 import Game from "./Game";
 
-export default function Routes(props: { isSignedIn: boolean; signInCb: Function }) {
+export default function Routes(props: { isSignedIn: boolean }) {
   return (
     <Switch>
       <Route exact path="/about">
@@ -14,7 +14,7 @@ export default function Routes(props: { isSignedIn: boolean; signInCb: Function 
       </Route>
       <Route exact path="/login">
         <div className="login-container">
-          <Login isSignedIn={props.isSignedIn} signInCb={props.signInCb} />
+          <Login isSignedIn={props.isSignedIn} />
         </div>
       </Route>
       <Route exact path="/">

@@ -1,5 +1,11 @@
 
-import { createStore } from "redux";
-import { gameReducer } from "./gameReducer";
+import { createStore, combineReducers } from "redux";
+import { userReducer } from "./gameReducer";
+import { ActionSignin, User } from "./types";
 
-export default createStore(gameReducer);
+const gameReducer = combineReducers({
+    userReducer
+});
+
+export type RootState = ReturnType<typeof gameReducer>;
+export const store = createStore<User, ActionSignin, null, null>(userReducer);

@@ -1,31 +1,41 @@
 import * as React from "react";
-// import ReactDOM from 'react-dom';
-// import { Provider } from "react-redux";
+import { BrowserRouter } from "react-router-dom";
+import { Provider } from "react-redux";
 import { UI } from "./UI";
-// import store from "../store";
+import { store } from "../store/index";
 import Routes from "./Routes";
+import GoogleLoginResponse from "react-google-login";
 
 interface IState {
   isSignedIn: boolean;
+  user: GoogleLoginResponse;
 }
+
+
 
 export default class App extends React.Component<{}, IState> {
   public readonly state: Readonly<IState> = {
     isSignedIn: false,
+    user: null
   };
 
-  signIn = () => {
+  signIn = (user: GoogleLoginResponse) => {
     console.log("app got a login");
     this.setState({
       isSignedIn: true,
+      user: user
     });
   };
 
   public render() {
     return (
       <div className="App container">
-        <UI isSignedIn={this.state.isSignedIn} />
-        <Routes isSignedIn={this.state.isSignedIn} signInCb={this.signIn} />
+        <BrowserRouter>
+          <Provider store={store}>
+            <UI />
+            <Routes isSignedIn={this.state.isSignedIn} />
+          </Provider>
+        </BrowserRouter>
       </div>
     );
   }

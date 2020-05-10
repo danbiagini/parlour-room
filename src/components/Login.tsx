@@ -1,28 +1,21 @@
 import React from "react";
 import * as config from "../utils/config";
 import GoogleLogin, { GoogleLoginResponse } from "react-google-login";
-// import smooches from "../public/smooches.png";
 import pp_logo from "../public/pparlour-logo.png";
 
 interface IProps {
   isSignedIn: boolean;
-  signInCb: Function;
 }
 
 const Login: React.FC<IProps> = (props: IProps) => {
   const responseSuccessGoogle = (response: GoogleLoginResponse) => {
     const whoami = response.getBasicProfile();
     console.log(`${JSON.stringify(response)} hi ${whoami.getEmail()}`);
-    props.signInCb(response);
   };
 
   const failedGoogle = (error: any) => {
     console.log(`failGoogle: ${JSON.stringify(error)}`);
   };
-
-  if (props.isSignedIn) {
-    console.log("already signed in?");
-  }
 
   //   useEffect(() => {
   //     window.gapi.load("auth2", () => {

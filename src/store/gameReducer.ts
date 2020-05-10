@@ -1,24 +1,36 @@
-export const TOGGLE_UI = "TOGGLE_UI";
+import { Reducer } from "redux";
+import { ACTIONS, AppState, User, ActionSignin } from "./types";
 
-const initState: { showUi: boolean } = {
-	showUi: false
+export const initState: AppState = {
+  user: null,
 };
 
-export const toggleUi = () => ({
-	type: TOGGLE_UI
-});
+export const initUser: User = {
+  isSignedIn: false,
+};
 
-export const gameReducer = (
-	state = initState,
-	action: { type: string; payload?: any }
-) => {
-	// tslint:disable-next-line: no-console
-	console.log("Action:", action);
-	switch (action.type) {
-	case TOGGLE_UI:
-		return { ...state, showUi: !state.showUi };
-
-	default:
-		return state;
-	}
+export const userReducer: Reducer<User, ActionSignin> = (state = initUser, action) => {
+  // tslint:disable-next-line: no-console
+  console.log("Action:", action);
+  switch (action.type) {
+    case ACTIONS.SIGNIN:
+      if (action.payload.isSignedIn) {
+        return {
+          ...state,
+          isSignedIn: true,
+          name: action.payload.name,
+          email: action.payload.email,
+          idp: action.payload.idp,
+          id: action.payload.id,
+        };
+      }
+      // this shouldn't happen, SIGNIN
+      console.error("signin action called with isSignedIn = false");
+      return {
+        ...state,
+        isSignedIn: false,
+      };
+    default:
+      return state;
+  }
 };

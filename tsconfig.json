@@ -7,7 +7,7 @@
         "moduleResolution": "node",
         "sourceMap": true,
         "outDir": "dist",
-        "baseUrl": "src",
+        "baseUrl": "./src",
         "allowJs": true,
         "jsx": "react",
         "paths": {
@@ -18,9 +18,9 @@
     },
     "include": [
         "declaration.d.ts",
-        "src/**/*"
+        "src/**/*", "test"
     ],
-    // "exclude": [
-    //     "src/components/Game.tsx"
-    // ]
+    "exclude": [
+        "test/"
+    ]
 }
