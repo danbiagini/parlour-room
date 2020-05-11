@@ -4,8 +4,9 @@ export enum IDP {
 }
 
 export enum ACTIONS {
-	SIGNIN = "SIGNIN",
-	SIGNOUT = "SIGNOUT"
+	AUTH_IDP = "AUTH_IDP",
+	SIGNOUT = "SIGNOUT",
+	INVALID = "INVALID"
 }
 
 export interface User {
@@ -20,8 +21,8 @@ export interface AppState {
   user: User;
 }
 
-export interface ActionSignin {
-  type: typeof ACTIONS.SIGNIN;
+export interface ActionAuthIdp {
+  type: typeof ACTIONS.AUTH_IDP;
   payload: Partial<User>;
 }
 
@@ -29,4 +30,4 @@ export interface DispatchAction {
   payload: Partial<AppState>;
 }
 
-export type UserActionTypes = ActionSignin;
+export type UserActionTypes = ActionAuthIdp;

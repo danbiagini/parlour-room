@@ -1,5 +1,5 @@
 import { Reducer } from "redux";
-import { ACTIONS, AppState, User, ActionSignin } from "./types";
+import { ACTIONS, AppState, User, ActionAuthIdp } from "./types";
 
 export const initState: AppState = {
   user: null,
@@ -9,12 +9,12 @@ export const initUser: User = {
   isSignedIn: false,
 };
 
-export const userReducer: Reducer<User, ActionSignin> = (state = initUser, action) => {
+export const userReducer: Reducer<User, ActionAuthIdp> = (state = initUser, action) => {
   // tslint:disable-next-line: no-console
   console.log("Action:", action);
   switch (action.type) {
-    case ACTIONS.SIGNIN:
-      if (action.payload.isSignedIn) {
+    case ACTIONS.AUTH_IDP:
+      if (action.payload && action.payload.isSignedIn) {
         return {
           ...state,
           isSignedIn: true,
@@ -25,7 +25,7 @@ export const userReducer: Reducer<User, ActionSignin> = (state = initUser, actio
         };
       }
       // this shouldn't happen, SIGNIN
-      console.error("signin action called with isSignedIn = false");
+      console.warn("signin action called with isSignedIn = false");
       return {
         ...state,
         isSignedIn: false,

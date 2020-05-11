@@ -1,25 +1,20 @@
-import { User, ActionSignin, IDP, ACTIONS } from "./types";
-import { initUser } from "./gameReducer";
+import { User, ActionAuthIdp, ACTIONS } from "./types";
+// import { initUser } from "./gameReducer";
 
-export const signin = (user: User) => {
-  if (!user.isSignedIn) {
-    return initUser;
-  }
-
-  if (user.idp != IDP.GOOGLE) {
-    console.error(`IDP: ${user.idp} not supported`);
-    return initUser;
-  }
+export const signinIdp = (user: User): ActionAuthIdp => {
 
   const newUser: User = {
     name: user.name,
     email: user.email,
     idp: user.idp,
-    isSignedIn: true,
+    isSignedIn: user.isSignedIn,
+    id: user.id,
   };
-  const act: ActionSignin = {
-    type: ACTIONS.SIGNIN,
+	
+  const act: ActionAuthIdp = {
+    type: ACTIONS.AUTH_IDP,
     payload: newUser,
   };
   return act;
 };
+

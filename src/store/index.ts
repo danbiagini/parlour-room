@@ -1,11 +1,11 @@
 
 import { createStore, combineReducers } from "redux";
 import { userReducer } from "./gameReducer";
-import { ActionSignin, User } from "./types";
+import { ActionAuthIdp, User } from "./types";
 
 const gameReducer = combineReducers({
     userReducer
 });
 
 export type RootState = ReturnType<typeof gameReducer>;
-export const store = createStore<User, ActionSignin, null, null>(userReducer);
+export const store = createStore<User, ActionAuthIdp, null, null>(userReducer);

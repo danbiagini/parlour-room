@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`can render correctly 1`] = `
+exports[`App can render correctly 1`] = `
 <div
   className="App container"
 >
