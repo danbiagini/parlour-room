@@ -33,7 +33,7 @@ export default class App extends React.Component<{}, IState> {
         <BrowserRouter>
           <Provider store={store}>
             <UI />
-            <Routes isSignedIn={this.state.isSignedIn} />
+            <Routes />
           </Provider>
         </BrowserRouter>
       </div>

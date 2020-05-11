@@ -1,16 +1,33 @@
 import React from "react";
 import * as config from "../utils/config";
 import GoogleLogin, { GoogleLoginResponse } from "react-google-login";
+import { Redirect } from "react-router";
 import pp_logo from "../public/pparlour-logo.png";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../store/index";
+import { signinIdp } from "../store/actions";
+import { User, IDP } from "../store/types";
 
-interface IProps {
-  isSignedIn: boolean;
-}
 
-const Login: React.FC<IProps> = (props: IProps) => {
+const Login: React.FC = () => {
+
+  const isSignedIn = useSelector((state: RootState) => state.isSignedIn);
+  if (isSignedIn) {
+    return (<Redirect to="/" />);
+  }
+  const dispatch = useDispatch();
+
   const responseSuccessGoogle = (response: GoogleLoginResponse) => {
     const whoami = response.getBasicProfile();
     console.log(`${JSON.stringify(response)} hi ${whoami.getEmail()}`);
+    let newUser: User = {
+      id: whoami.getId(),
+      idp: IDP.GOOGLE,
+      name: whoami.getName(),
+      email: whoami.getEmail(),
+      isSignedIn: true
+    };
+    dispatch(signinIdp(newUser));
   };
 
   const failedGoogle = (error: any) => {
@@ -36,7 +53,7 @@ const Login: React.FC<IProps> = (props: IProps) => {
           // buttonText="Login with Google"
           onSuccess={responseSuccessGoogle}
           onFailure={failedGoogle}
-          isSignedIn={props.isSignedIn}
+          isSignedIn={isSignedIn}
         />
       </div>
     </div>

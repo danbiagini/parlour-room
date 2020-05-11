@@ -57,88 +57,73 @@ exports[`App can render correctly 1`] = `
       </div>
     </div>
   </nav>
-  <div
-    className="Home"
-  >
-    <header
-      className="App-header"
+  <div>
+    <div
+      className="lander"
     >
-      <img
-        alt="logo"
-        className="App-logo"
-        src="test-file-stub"
-      />
-    </header>
+      <h1>
+        A Place for families and friends to stay connected
+      </h1>
+    </div>
     <div>
       <div>
-        <div
-          className="lander"
+        According to 
+        <a
+          href="https://en.wikipedia.org/wiki/Parlour"
+          title="WIkpedia"
         >
-          <h1>
-            A Place for families and friends to stay connected
-          </h1>
-        </div>
-        <div>
-          <div>
-            According to 
-            <a
-              href="https://en.wikipedia.org/wiki/Parlour"
-              title="WIkpedia"
-            >
-              Wikipedia
-            </a>
-            :
-            <br />
-            A 
-            <b>
-              parlour
-            </b>
-             (or 
-            <b>
-              parlor
-            </b>
-            ) is a 
-            <a
-              draggable="true"
-              href="https://en.wikipedia.org/wiki/Reception_room"
-              title="Reception room"
-            >
-              reception room
-            </a>
-             or public space. In 
-            <a
-              draggable="true"
-              href="https://en.wikipedia.org/wiki/Middle_Ages"
-              title="Middle Ages"
-            >
-              medieval 
-            </a>
-            <a
-              draggable="true"
-              href="https://en.wikipedia.org/wiki/Christianity"
-              title="Christianity"
-            >
-              Christian 
-            </a>
-            Europe, the "outer parlour" was the room where the monks or nuns conducted business with those outside the monastery and the "inner parlour" was used for necessary conversation between resident members. In the English-speaking world of the 18th and 19th century, having a parlour room was evidence of social status.
-          </div>
-        </div>
+          Wikipedia
+        </a>
+        :
         <br />
+        A 
+        <b>
+          parlour
+        </b>
+         (or 
+        <b>
+          parlor
+        </b>
+        ) is a 
+        <a
+          draggable="true"
+          href="https://en.wikipedia.org/wiki/Reception_room"
+          title="Reception room"
+        >
+          reception room
+        </a>
+         or public space. In 
+        <a
+          draggable="true"
+          href="https://en.wikipedia.org/wiki/Middle_Ages"
+          title="Middle Ages"
+        >
+          medieval 
+        </a>
+        <a
+          draggable="true"
+          href="https://en.wikipedia.org/wiki/Christianity"
+          title="Christianity"
+        >
+          Christian 
+        </a>
+        Europe, the "outer parlour" was the room where the monks or nuns conducted business with those outside the monastery and the "inner parlour" was used for necessary conversation between resident members. In the English-speaking world of the 18th and 19th century, having a parlour room was evidence of social status.
+      </div>
+    </div>
+    <br />
+    <div>
+      <div>
+        <h3>
+          Why Pandemic Parlour
+        </h3>
+      </div>
+      <div
+        id="ifuvf"
+        title="Pandemic_Mission"
+      >
         <div>
-          <div>
-            <h3>
-              Why Pandemic Parlour
-            </h3>
-          </div>
-          <div
-            id="ifuvf"
-            title="Pandemic_Mission"
-          >
-            <div>
-              I decided to build Pandemic Parlour for a couple reasons. I've always had a desire to create and build using technology while also providing something useful to others. When the COVID pandemic and quarantining began I noticed a few challenges with keeping connected with families and friends. What we needed was way to have the "inner parlour" for families and friends to congregate, especially for younger kids who don‘t sit still long enough for a video chat. Pandemic Parlour is a place to chat,  play games and generally interact. It is designed to be kid safe, and ultimately a way to bridge the technology gap between family members of all ages. 
-              <br />
-            </div>
-          </div>
+          I decided to build Pandemic Parlour for a couple reasons. I've always had a desire to create and build using technology while also providing something useful to others. When the COVID pandemic and quarantining began I noticed a few challenges with keeping connected with families and friends. What we needed was way to have the "inner parlour" for families and friends to congregate, especially for younger kids who don‘t sit still long enough for a video chat. Pandemic Parlour is a place to chat,  play games and generally interact. It is designed to be kid safe, and ultimately a way to bridge the technology gap between family members of all ages. 
+          <br />
         </div>
       </div>
     </div>

@@ -1,41 +1,28 @@
 import * as React from "react";
-// import ReactDOM from 'react-dom';
-// import { Provider } from "react-redux";
-// import { UI } from './UI';
-// import store from "../store";
-// import Routes from './Routes';
-import About from "./About";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/index";
+import { Redirect } from "react-router";
 import pp from "../public/pparlour-logo.png";
 
-interface IProps {
-  isSignedIn: boolean;
-}
+const Home: React.FC = () => {
+  const isSignedIn = useSelector((state: RootState) => state.isSignedIn);
 
-export default class Home extends React.Component<IProps, {}> {
-  constructor(props: IProps) {
-    super(props);
+  if (!isSignedIn) {
+    return (<Redirect to="/about"/>);
   }
 
-  getContent() {
-    if (this.props.isSignedIn) {
-      return <p>{"hello user, you're signed in "}</p>;
-    } else {
-      return (
-        <About />
-      );
-    }
-  }
+  const whoami = useSelector((state: RootState) => state.name);
+  let content = <p>{`hello ${whoami}, you're signed in`}</p>;
 
-  render() {
-    return (
-      <div className="Home">
-        <header className="App-header">
-          <img src={pp} className="App-logo" alt="logo" />
-        </header>
-        <div>
-          {this.getContent()}
-        </div>
-      </div>
-    );
-  }
-}
+
+  return (
+    <div className="Home">
+      <header className="App-header">
+        <img src={pp} className="App-logo" alt="logo" />
+      </header>
+      <div>{content}</div>
+    </div>
+  );
+};
+
+export default Home;

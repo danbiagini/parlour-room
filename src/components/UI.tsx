@@ -1,24 +1,28 @@
 import React from "react";
-// import { connect } from "react-redux";
 import { Navbar, Nav } from "react-bootstrap";
 import "./UI.scss";
 import pp_logo from "../public/pparlour-logo.png";
 import { LinkContainer } from "react-router-bootstrap";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/index";
 
-interface IProps {
-  isSignedIn?: boolean;
-}
+export const UI: React.FC = () => {
+  const isSignedIn = useSelector((state: RootState) => {
+    return (state.isSignedIn);
+  });
 
-export const UI: React.FC<IProps> = (props: IProps) => {
   let identityElements = (
     <Nav className="ml-auto">
       <LinkContainer to="/account">
         <Nav.Link>Account</Nav.Link>
       </LinkContainer>
+      <LinkContainer to="/logout">
+        <Nav.Link>Logout</Nav.Link>
+      </LinkContainer>
     </Nav>
   );
 
-  if (!props.isSignedIn) {
+  if (!isSignedIn) {
     identityElements = (
       <Nav className="ml-auto">
         <LinkContainer to="/signup">
