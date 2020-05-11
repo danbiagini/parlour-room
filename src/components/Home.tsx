@@ -12,7 +12,7 @@ const Home: React.FC = () => {
   }
 
   const whoami = useSelector((state: RootState) => state.name);
-  let content = <p>{`hello ${whoami}, you're signed in`}</p>;
+  let content = <h1>{`Hello ${whoami}, you're signed in`}</h1>;
 
 
   return (
