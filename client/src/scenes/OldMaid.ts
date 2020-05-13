@@ -1,7 +1,7 @@
-import { Scene, GameObjects } from "phaser"
-import { Card, Deck, StandardDeckFactory, Rank, Suit, CardFace } from '../helpers/Card'
-import HandZone from '../helpers/Zones'
-import { OpenEvent } from "ws";
+import { Scene, GameObjects } from "phaser";
+import { Deck, StandardDeckFactory } from "../helpers/Card";
+import HandZone from "../helpers/Zones";
+// import { OpenEvent } from "ws";
 
 
 export default class OldMaid extends Scene {
@@ -12,7 +12,7 @@ export default class OldMaid extends Scene {
     private ws: WebSocket;
 
     constructor() {
-        super('OldMaid');
+        super("OldMaid");
     }
 
     preload() {
@@ -20,61 +20,61 @@ export default class OldMaid extends Scene {
         this.deck = StandardDeckFactory(imageDir, this, 1);
         this.cardKeys = Object.keys(this.deck);
         // tslint:disable-next-line: no-console
-        console.log("Created deck with " + this.cardKeys.length + " cards.")
+        console.log("Created deck with " + this.cardKeys.length + " cards.");
     }
 
-    onOpen(event: Event) {
-        alert("CONNECTED");
-        this.ws.send("WebSocket rocks");
-    }
+    // onOpen(event: Event) {
+    //     alert("CONNECTED");
+    //     this.ws.send("WebSocket rocks");
+    // }
 
-    onClose(event: CloseEvent) {
-        // tslint:disable-next-line: no-console
-        console.log("socket closed.");
-    }
+    // onClose(event: CloseEvent) {
+    //     // tslint:disable-next-line: no-console
+    //     console.log("socket closed.");
+    // }
 
-    onMessage(event: MessageEvent) {
-        // tslint:disable-next-line: no-console
-        console.log("message received:" + event.data);
-    }
+    // onMessage(event: MessageEvent) {
+    //     // tslint:disable-next-line: no-console
+    //     console.log("message received:" + event.data);
+    // }
 
-    onError(event) {
-        // tslint:disable-next-line: no-console
-        console.log("socket closed.");
-    }
+    // onError(event) {
+    //     // tslint:disable-next-line: no-console
+    //     console.log("socket closed.");
+    // }
 
-    connectSocket() {
-        const loc = window.location;
-        let wsUri;
-        if (loc.protocol === "https:") {
-            wsUri = "wss:";
-        } else {
-            wsUri = "ws:";
-        }
+    // connectSocket() {
+    //     const loc = window.location;
+    //     let wsUri;
+    //     if (loc.protocol === "https:") {
+    //         wsUri = "wss:";
+    //     } else {
+    //         wsUri = "ws:";
+    //     }
 
-        wsUri += "//" + loc.host + "/socket";
+    //     wsUri += "//" + loc.host + "/socket";
 
-        // const wsUri = "ws:/socket";
-        this.ws = new WebSocket(wsUri);
-        this.ws.onopen = (evt) => { this.onOpen(evt) };
-        this.ws.onclose = (evt) => { this.onClose(evt) };
-        this.ws.onmessage = (evt) => { this.onMessage(evt) };
-        this.ws.onerror = (evt) => { this.onError(evt) };
+    //     // const wsUri = "ws:/socket";
+    //     this.ws = new WebSocket(wsUri);
+    //     this.ws.onopen = (evt) => { this.onOpen(evt); };
+    //     this.ws.onclose = (evt) => { this.onClose(evt); };
+    //     this.ws.onmessage = (evt) => { this.onMessage(evt); };
+    //     this.ws.onerror = (evt) => { this.onError(evt); };
 
-    }
+    // }
     dealCards() {
-        this.connectSocket();
+        // this.connectSocket();
         for (let i = 0; i < 5; i++) {
-            const playerCard = this.deck[this.cardKeys[(Math.floor(Math.random() * this.cardKeys.length))]]
+            const playerCard = this.deck[this.cardKeys[(Math.floor(Math.random() * this.cardKeys.length))]];
             playerCard.render(475 + (i * 100),650);
         }
     }
 
     create() {
-        this.dealText = this.add.text(75, 350, ['DEAL CARDS'])
+        this.dealText = this.add.text(75, 350, ["DEAL CARDS"])
             .setFontSize(18)
-            .setFontFamily('Trebuchet MS')
-            .setColor('#00ffff')
+            .setFontFamily("Trebuchet MS")
+            .setColor("#00ffff")
             .setInteractive();
 
         this.handZone = new HandZone(this, 700, 375, 900, 250);
@@ -88,42 +88,42 @@ export default class OldMaid extends Scene {
         // this.deck["ace-clubs"].render(420, 300);
         // this.deck["red-joker"].render(460, 300);
 
-        this.dealText.on('pointerdown', () => {
+        this.dealText.on("pointerdown", () => {
             self.dealCards();
-        })
+        });
 
-        this.dealText.on('pointerover', () => {
-            self.dealText.setColor('#ff69b4');
-        })
+        this.dealText.on("pointerover", () => {
+            self.dealText.setColor("#ff69b4");
+        });
 
-        this.dealText.on('pointerout', () => {
-            self.dealText.setColor('#00ffff');
-        })
+        this.dealText.on("pointerout", () => {
+            self.dealText.setColor("#00ffff");
+        });
 
-        this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+        this.input.on("drag", (pointer: Phaser.Input.Pointer, gameObject: GameObjects.Image, dragX: number, dragY:number) => {
             gameObject.x = dragX;
             gameObject.y = dragY;
-        })
+        });
 
-        this.input.on('dragstart', (pointer, gameObject) => {
+        this.input.on("dragstart", (pointer: Phaser.Input.Pointer, gameObject: GameObjects.Image) => {
             gameObject.setTint(0xff69b4);
             self.children.bringToTop(gameObject);
-        })
+        });
 
-        this.input.on('dragend', (pointer, gameObject, dropped) => {
-            gameObject.setTint();
-            if (!dropped) {
-                gameObject.x = gameObject.input.dragStartX;
-                gameObject.y = gameObject.input.dragStartY;
-            }
-        })
+        this.input.on("dragend", (pointer: Phaser.Input.Pointer, gameObject: GameObjects.Image, dropped:boolean) => {
+          gameObject.setTint();
+          if (!dropped) {
+            gameObject.x = gameObject.input.dragStartX;
+            gameObject.y = gameObject.input.dragStartY;
+          }
+        });
 
-        this.input.on('drop', (pointer, gameObject, dropZone) => {
+        this.input.on("drop", (pointer: Phaser.Input.Pointer, gameObject: GameObjects.Image, dropZone: GameObjects.Zone) => {
             dropZone.data.values.cards++;
             gameObject.x = (dropZone.x - 350) + (dropZone.data.values.cards * 70);
             gameObject.y = dropZone.y;
             gameObject.disableInteractive();
-        })
+        });
     }
 
     // tslint:disable-next-line: no-empty

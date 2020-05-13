@@ -1,5 +1,4 @@
-import { GameObjects, Scene } from 'phaser'
-import GameScene from '../scenes/GameScene';
+import { GameObjects, Scene } from "phaser";
 
 export enum Suit {
     NONE,
@@ -118,7 +117,6 @@ export function StandardDeckFactory(imagePath: string, scene: Scene, jokers = 0)
 
     // Any jokers in this deck?
     for (let j = 0; j < jokers; j++) {
-        const rankName = "joker";
         const jokerVariant = Jokers[j].toLowerCase();
         const image = imagePath + "/" + jokerVariant + "_joker.png";
         const key = jokerVariant + "-joker";

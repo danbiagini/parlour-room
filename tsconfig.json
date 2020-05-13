@@ -7,8 +7,9 @@
         "moduleResolution": "node",
         "sourceMap": true,
         "outDir": "dist",
-        "baseUrl": ".",
+        "baseUrl": "./src",
         "allowJs": true,
+        "jsx": "react",
         "paths": {
             "*": [
                 "node_modules/*"
@@ -16,6 +17,11 @@
         }
     },
     "include": [
-        "src/**/*"
+        "declaration.d.ts",
+        "src/**/*", "test"
+    ],
+    "exclude": [
+        "test/",
+        "tools/"
     ]
 }
