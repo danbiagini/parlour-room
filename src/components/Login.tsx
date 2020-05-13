@@ -1,5 +1,5 @@
 import React from "react";
-import * as config from "../utils/config";
+import * as config from "../utils/client_config";
 import GoogleLogin, { GoogleLoginResponse } from "react-google-login";
 import { Redirect } from "react-router";
 import pp_logo from "../public/pparlour-logo.png";
