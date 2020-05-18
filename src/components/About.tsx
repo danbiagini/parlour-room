@@ -1,9 +1,10 @@
 import React from "react";
 import "./App.scss";
+import { Jumbotron } from "react-bootstrap";
 
 export default function About() {
 	return (
-		<div>
+		<Jumbotron className="bg-transparent">
 			<div className="lander"><h1>A Place for families and friends to stay connected</h1></div>
 			<div>
 				<div>According to <a href="https://en.wikipedia.org/wiki/Parlour" title="WIkpedia" >Wikipedia</a>:<br />A <b>parlour</b> (or <b>parlor</b>) is a <a draggable="true"
@@ -31,6 +32,6 @@ export default function About() {
           between family members of all ages. <br /></div>
 				</div>
 			</div>
-		</div>
+		</Jumbotron>
 	);
 }

@@ -1,7 +1,8 @@
 import * as React from "react";
 import { BrowserRouter } from "react-router-dom";
 import { Provider } from "react-redux";
-import { UI } from "./UI";
+import { NavBarUI } from "./NavBarUI";
+import { Footer } from "./Footer";
 import { store } from "../store/index";
 import Routes from "./Routes";
 import GoogleLoginResponse from "react-google-login";
@@ -32,8 +33,9 @@ export default class App extends React.Component<{}, IState> {
       <div className="App container">
         <BrowserRouter>
           <Provider store={store}>
-            <UI />
+            <NavBarUI />
             <Routes />
+            <Footer />
           </Provider>
         </BrowserRouter>
       </div>

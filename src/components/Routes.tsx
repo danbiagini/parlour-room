@@ -5,6 +5,7 @@ import Home from "./Home";
 import NotFound from "./NotFound";
 import Login from "./Login";
 import Game from "./Game";
+import Privacy from "./Privacy";
 
 export default function Routes() {
   return (
@@ -20,6 +21,7 @@ export default function Routes() {
       <Route exact path="/">
         <Home />
       </Route>
+      <Route exact path="/privacy"><Privacy /></Route>
       <Route exact path="/oldmaid">
         <Game />
       </Route>
