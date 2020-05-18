@@ -1,5 +1,6 @@
 import React from "react";
 import { Navbar, Nav } from "react-bootstrap";
+import { LinkContainer } from "react-router-bootstrap";
 import pp_logo from "../public/pparlour-logo.png";
 
 export const Footer: React.FC = () => {
@@ -9,8 +10,12 @@ export const Footer: React.FC = () => {
         <img src={pp_logo} />
       </Navbar.Brand>
       <Nav>
-        <Nav.Link href="/about">About</Nav.Link>
-        <Nav.Link href="/privacy">Privacy</Nav.Link>
+        <LinkContainer to="/about">
+          <Nav.Link>About</Nav.Link>
+        </LinkContainer>
+        <LinkContainer to="privacy">
+          <Nav.Link href="/privacy">Privacy</Nav.Link>
+        </LinkContainer>
       </Nav>
     </Navbar>
   );

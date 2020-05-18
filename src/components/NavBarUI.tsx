@@ -1,6 +1,5 @@
 import React from "react";
 import { Navbar, Nav } from "react-bootstrap";
-// import "./NavBarUI.scss";
 import pp_logo from "../public/pparlour-logo.png";
 import { LinkContainer } from "react-router-bootstrap";
 import { useSelector } from "react-redux";
@@ -37,10 +36,12 @@ export const NavBarUI: React.FC = () => {
 
   return (
     <Navbar collapseOnSelect variant="light" expand="lg" bg="light" sticky="top">
-      <Navbar.Brand href="/">
-        <img src={pp_logo} />
-        Pandemic Parlour
-      </Navbar.Brand>
+      <LinkContainer to="/">
+        <Navbar.Brand href="/">
+          <img src={pp_logo} />
+          Pandemic Parlour
+        </Navbar.Brand>
+      </LinkContainer>
       <Navbar.Toggle aria-controls="responsive-navbar-nav" />
       <Navbar.Collapse id="responsive-navbar-nav">{identityElements}</Navbar.Collapse>
     </Navbar>
