@@ -5,11 +5,13 @@ exports[`App can render correctly 1`] = `
   className="App container"
 >
   <nav
-    className="navbar navbar-expand-lg navbar-light bg-light"
+    className="navbar navbar-expand-lg navbar-light bg-light sticky-top"
   >
     <a
-      className="navbar-brand"
+      className="active navbar-brand"
       href="/"
+      onClick={[Function]}
+      style={Object {}}
     >
       <img
         src="test-file-stub"
@@ -57,7 +59,9 @@ exports[`App can render correctly 1`] = `
       </div>
     </div>
   </nav>
-  <div>
+  <div
+    className="bg-transparent jumbotron"
+  >
     <div
       className="lander"
     >
@@ -128,5 +132,41 @@ exports[`App can render correctly 1`] = `
       </div>
     </div>
   </div>
+  <nav
+    className="navbar navbar-expand navbar-light bg-light fixed-bottom"
+  >
+    <a
+      className="navbar-brand"
+      href="/"
+    >
+      <img
+        src="test-file-stub"
+      />
+    </a>
+    <div
+      className="navbar-nav"
+      onKeyDown={[Function]}
+    >
+      <a
+        className="active nav-link"
+        data-rb-event-key="/about"
+        href="/about"
+        onClick={[Function]}
+        onKeyDown={[Function]}
+        style={Object {}}
+      >
+        About
+      </a>
+      <a
+        className="nav-link"
+        data-rb-event-key="privacy"
+        href="privacy"
+        onClick={[Function]}
+        onKeyDown={[Function]}
+      >
+        Privacy
+      </a>
+    </div>
+  </nav>
 </div>
 `;
