@@ -1,12 +1,11 @@
 import React from "react";
 import { Navbar, Nav } from "react-bootstrap";
-import "./UI.scss";
 import pp_logo from "../public/pparlour-logo.png";
 import { LinkContainer } from "react-router-bootstrap";
 import { useSelector } from "react-redux";
 import { RootState } from "../store/index";
 
-export const UI: React.FC = () => {
+export const NavBarUI: React.FC = () => {
   const isSignedIn = useSelector((state: RootState) => {
     return (state.isSignedIn);
   });
@@ -36,11 +35,13 @@ export const UI: React.FC = () => {
   }
 
   return (
-    <Navbar collapseOnSelect variant="light" expand="lg" bg="light">
-      <Navbar.Brand href="/">
-        <img src={pp_logo} />
-        Pandemic Parlour
-      </Navbar.Brand>
+    <Navbar collapseOnSelect variant="light" expand="lg" bg="light" sticky="top">
+      <LinkContainer to="/">
+        <Navbar.Brand href="/">
+          <img src={pp_logo} />
+          Pandemic Parlour
+        </Navbar.Brand>
+      </LinkContainer>
       <Navbar.Toggle aria-controls="responsive-navbar-nav" />
       <Navbar.Collapse id="responsive-navbar-nav">{identityElements}</Navbar.Collapse>
     </Navbar>

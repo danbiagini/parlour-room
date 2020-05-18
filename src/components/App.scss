@@ -1,39 +1,15 @@
+.App .navbar-brand {
+  font-weight: bold;
+}
+
+.App .navbar-brand>img {
+  padding: 7px 14px;
+  height: 75px;
+  margin: auto;
+}
+
 .App {
   margin-top: 15px;
-}
-
-.App .app-logo {
-    margin: auto;
-    // height: 150px;
-}
-
-.Home .App-header {
-  text-align: center;
-  padding-top: 50px;
-}
-
-.Home .lander {
-    padding: 40px 0;
-    text-align: center;
-}
-
-.Home .lander h1 {
-    font-family: "Open Sans", sans-serif;
-    font-weight: 600;
-    text-align: center;
-}
-
-.Home .lander p {
-    color: #999;
-}
-
-select.form-control,
-textarea.form-control,
-input.form-control {
-  font-size: 16px;
-}
-input[type=file] {
-  width: 100%;
 }
 
 .NotFound {
@@ -46,7 +22,7 @@ input[type=file] {
     padding: 60px 0;
     margin: auto;
     width: 50%;
-    // border: 3px solid green;
+    border: 3px solid green;
     text-align: center;
   }
 
