@@ -1,5 +1,6 @@
 
 export enum IDP {
+  NONE,
   GOOGLE,
 }
 
@@ -15,6 +16,7 @@ export interface User {
   email?: string;
   idp?: IDP;
   id?: string;
+  profPicUrl?: string;
 }
 
 export interface AppState {
@@ -31,3 +33,17 @@ export interface DispatchAction {
 }
 
 export type UserActionTypes = ActionAuthIdp;
+
+export interface ApiResponse {
+  code: number;
+  data: User;
+}
+
+export interface ApiError {
+  code: number;
+  description: string;
+}
+
+export function isApiError(response: ApiError | ApiResponse): response is ApiError {
+  return (response as ApiResponse).data === undefined;
+}

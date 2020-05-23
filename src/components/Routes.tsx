@@ -3,7 +3,7 @@ import { Route, Switch } from "react-router-dom";
 import About from "./About";
 import Home from "./Home";
 import NotFound from "./NotFound";
-import Login from "./Login";
+import { Login } from "./Login";
 import Game from "./Game";
 import Privacy from "./Privacy";
 

@@ -22,6 +22,7 @@ export const userReducer: Reducer<User, ActionAuthIdp> = (state = initUser, acti
           email: action.payload.email,
           idp: action.payload.idp,
           id: action.payload.id,
+          profPicUrl: action.payload.profPicUrl,
         };
       }
       // this shouldn't happen, SIGNIN

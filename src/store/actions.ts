@@ -1,5 +1,19 @@
-import { User, ActionAuthIdp, ACTIONS } from "./types";
+import { User, ActionAuthIdp, ACTIONS, IDP } from "./types";
 // import { initUser } from "./gameReducer";
+
+export const signoutIdp = () : ActionAuthIdp => {
+  const newUser: User = {
+    name: "",
+    email: "",
+    idp: IDP.NONE,
+    isSignedIn: false,
+    id: ""
+  };
+  return ({
+    type: ACTIONS.AUTH_IDP,
+    payload: newUser
+  });
+};
 
 export const signinIdp = (user: User): ActionAuthIdp => {
 
