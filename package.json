@@ -22,7 +22,7 @@
     "client-package": "parcel build src/index.html --out-dir dist/public/",
     "client-build": "npm-run-all test copy-assets client-package",
     "docker-build": "docker build --tag pandemicparlour-postgres tools/dockerbuild/",
-    "docker-run": "docker run  --env-file .env -p 5432:5432  pandemicparlour-postgres"
+    "docker-run": "docker run -d --env-file .env -p 5432:5432  pandemicparlour-postgres"
   },
   "repository": {
     "type": "git",
