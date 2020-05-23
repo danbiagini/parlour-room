@@ -20,7 +20,9 @@
     "start": "node .",
     "sec2env": "ts-node tools/gcpSecrets",
     "client-package": "parcel build src/index.html --out-dir dist/public/",
-    "client-build": "npm-run-all test copy-assets client-package"
+    "client-build": "npm-run-all test copy-assets client-package",
+    "docker-build": "docker build --tag pandemicparlour-postgres tools/dockerbuild/",
+    "docker-run": "docker run  --env-file .env -p 5432:5432  pandemicparlour-postgres"
   },
   "repository": {
     "type": "git",
@@ -85,11 +87,11 @@
     "@typescript-eslint/parser": "^2.30.0",
     "canvas": "^2.6.1",
     "concurrently": "^5.2.0",
-    "db-migrate": "^0.11.11",
     "eslint": "^6.8.0",
     "eslint-plugin-ejs-js": "^0.1.0",
     "eslint-plugin-react": "^7.19.0",
     "fs-extra": "^9.0.0",
+    "graphile-migrate": "^0.3.1",
     "http-proxy-middleware": "^1.0.3",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^25.5.4",
