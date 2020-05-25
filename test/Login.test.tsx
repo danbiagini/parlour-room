@@ -1,7 +1,7 @@
 import * as actions from "../src/store/actions";
 import * as types from "../src/store/types";
 import { userReducer as reducer, initUser } from "../src/store/gameReducer";
-import {Login, serverAuth} from "../src/components/Login";
+import { Login } from "../src/components/Login";
 import { store } from "../src/store/index";
 
 import React from "react";

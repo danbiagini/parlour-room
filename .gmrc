@@ -105,11 +105,12 @@
    * evaluated (i.e. in watch mode).
    */
   "afterCurrent": [
-    // {
-    //   "_": "command",
-    //   "shadow": true,
-    //   "command": "if [ \"$IN_TESTS\" = \"1\" ]; then ./scripts/test-seed; fi",
-    // },
+    {
+       "_": "command",
+       "shadow": false,
+       //"command": "if [ \"$IN_TESTS\" = \"1\" ]; then ./scripts/test-seed; fi",
+       "command": "d=$(date); echo \"export const ts = '$d'; \n\" > db/test/jest.watch.hack.ts"
+    }
   ],
 
   /*
@@ -134,7 +135,7 @@
   /*
    * migrationsFolder: path to the folder in which to store your migrations.
    */
-  // migrationsFolder: "./migrations",
+  migrationsFolder: "./db/migrations",
 
   "//generatedWith": "0.3.1"
 }
