@@ -22,7 +22,8 @@
     "client-package": "parcel build src/index.html --out-dir dist/public/",
     "client-build": "npm-run-all test copy-assets client-package",
     "docker-build": "docker build --tag pandemicparlour-postgres tools/dockerbuild/",
-    "docker-run": "docker run -d --env-file .env -p 5432:5432  pandemicparlour-postgres"
+    "docker-run": "docker run -d --env-file .env -p 5432:5432  pandemicparlour-postgres",
+    "migrate": "eval $(egrep -v '^#' .env | xargs) graphile-migrate watch"
   },
   "repository": {
     "type": "git",
@@ -42,6 +43,7 @@
   },
   "homepage": "https://github.com/danbiagini/pandemic-parlour#readme",
   "dependencies": {
+    "@graphile-contrib/pg-simplify-inflector": "^6.0.0",
     "axios": "^0.19.2",
     "bootstrap": "^4.4.1",
     "dotenv": "^8.2.0",
@@ -51,6 +53,7 @@
     "jquery": "^3.5.0",
     "phaser": "^3.22.0",
     "popper.js": "^1.16.1",
+    "postgraphile": "^4.7.0",
     "public": "^0.1.5",
     "react": "^16.13.1",
     "react-bootstrap": "^1.0.1",
