@@ -1,5 +1,5 @@
 import * as express from "express";
-// import pgPromise from "pg-promise";
+import { Pool } from "pg";
 
 // export const register = ( app: express.Application ) => {
 //     const oidc = app.locals.oidc;

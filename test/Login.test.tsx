@@ -3,20 +3,21 @@ import * as types from "../src/store/types";
 import { userReducer as reducer, initUser } from "../src/store/gameReducer";
 import { Login } from "../src/components/Login";
 import { store } from "../src/store/index";
-
+import { testUser } from "../db/test/helper";
 import React from "react";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router";
 import { render, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
-const testUser: types.User = {
-  isSignedIn: true,
-  id: "12345",
-  idp: types.IDP.GOOGLE,
-  name: "Dan B",
-  email: "dan@smartguys.com",
-};
+// const testUser: types.User = {
+//   isSignedIn: true,
+//   idpId: "12345",
+//   idp: types.IDP.GOOGLE,
+//   firstName: "Dan",
+//   email: "dan@smartguys.com",
+//   about: "smart guy"
+// };
 
 const partialActAuthIdp: types.ActionAuthIdp = {
   type: types.ACTIONS.AUTH_IDP,

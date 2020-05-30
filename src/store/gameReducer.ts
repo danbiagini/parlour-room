@@ -18,10 +18,13 @@ export const userReducer: Reducer<User, ActionAuthIdp> = (state = initUser, acti
         return {
           ...state,
           isSignedIn: true,
-          name: action.payload.name,
+          username: action.payload.username,
+          lastName: action.payload.lastName,
+          firstName: action.payload.firstName,
           email: action.payload.email,
           idp: action.payload.idp,
-          id: action.payload.id,
+          idpId: action.payload.idpId,
+          about: action.payload.about,
           profPicUrl: action.payload.profPicUrl,
         };
       }

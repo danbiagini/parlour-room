@@ -7,7 +7,8 @@
     "extends": [
         "eslint:recommended",
         "plugin:react/recommended",
-        "plugin:@typescript-eslint/eslint-recommended"
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:prettier/recommended"
     ],
     "globals": {
         "Atomics": "readonly",
@@ -24,27 +25,29 @@
     "plugins": [
         "react",
         "@typescript-eslint",
-        "ejs-js"
+        "ejs-js",
+        "prettier"
     ],
     "ignorePatterns": [
         "public/",
         "node_modules/"
     ],
     "rules": {
-        "linebreak-style": [
-            "error",
-            "unix"
-        ],
-        "quotes": [
-            "error",
-            "double"
-        ],
-        "semi": [
-            "error",
-            "always"
-        ],
+        // "linebreak-style": [
+        //     "error",
+        //     "unix"
+        // ],
+        // "quotes": [
+        //     "error",
+        //     "double"
+        // ],
+        // "semi": [
+        //     "error",
+        //     "always"
+        // ],
         "no-unused-vars": "off",
-        "@typescript-eslint/no-unused-vars": "error"
+        "@typescript-eslint/no-unused-vars": "error",
+        "prettier/prettier": "error"
     },
     "settings": {
         "react": {

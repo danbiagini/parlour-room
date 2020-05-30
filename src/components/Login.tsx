@@ -56,22 +56,24 @@ export const Login: React.FC = () => {
     const id = response.googleId;
     const id_token = response.tokenId;
     const email = response.profileObj.email;
-    const name = response.profileObj.name;
+    const name = response.profileObj.givenName;
+    const last = response.profileObj.familyName;
     console.log(`${JSON.stringify(response)} hi ${email}, with token ${id_token}`);
 
     let newUser: User = {
-      id: id,
+      idpId: id,
       idp: IDP.GOOGLE,
-      name: name,
+      firstName: name,
       email: email,
       profPicUrl: response.profileObj.imageUrl,
-      isSignedIn: true
+      isSignedIn: true,
+      lastName: last
     };
 
     serverAuth(newUser, id_token)
       .then((response) => {
         if (!isApiError(response)) {
-          console.log(`Success, logged in ${response.data.id}`);
+          console.log(`Success, logged in ${response.data.idpId}`);
         } else {
           console.log(`Api error: ${response.code} ${response.description}`);
         }

@@ -11,7 +11,7 @@ const Home: React.FC = () => {
     return (<Redirect to="/about"/>);
   }
 
-  const whoami = useSelector((state: RootState) => state.name);
+  const whoami = useSelector((state: RootState) => state.firstName);
   let content = <h1>{`Hello ${whoami}, you're signed in`}</h1>;
 
 

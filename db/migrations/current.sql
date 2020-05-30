@@ -3,6 +3,7 @@ create schema if not exists parlour_public;
 create schema if not exists parlour_private;
 
 create extension if not exists "pgcrypto";
+create extension if not exists "citext";
 
 -- grants
 alter default privileges revoke execute on functions from public;
@@ -20,11 +21,12 @@ $$ language plpgsql;
 drop table if exists parlour_public.user cascade;
 create table parlour_public.user (
 	uid	uuid primary key default gen_random_uuid(),
-	username text not null unique,
-	first_name text check (char_length(email) < 80),
-	last_name text check (char_length(email) < 80),
+	username citext not null unique check (((length((username)::text) >= 2) AND (length((username)::text) <= 24) AND (username OPERATOR(public.~) '^[a-zA-Z]([a-zA-Z0-9][_]?)+$'::public.citext))),
+	first_name text check (char_length(first_name) < 80),
+	last_name text check (char_length(last_name) < 80),
 	email text check (char_length(email) < 80),
-	about text check (char_length(email) < 1024),
+	about text check (char_length(about) < 2048),
+	prof_img_url text check ((char_length(prof_img_url) < 2048) AND (prof_img_url ~ '^https?://[^/]+'::text)),
 	created_at timestamp not null  default now(),
 	updated_at timestamp not null default now()
 );
@@ -98,14 +100,14 @@ create table parlour_private.account (
 	uid uuid primary key references parlour_public.user(uid) on delete cascade,
 	idp parlour_public.identityProvider not null,
 	id_token text,
-	external_id text not null
+	idp_id text not null
 );
 
 comment on table parlour_private.account is 'Account secret data';
 comment on column parlour_private.account.uid is 'The uid of the user associated with this account';
 comment on column parlour_private.account.idp is 'Identity provider for this account';
 comment on column parlour_private.account.id_token is 'ID token for OpenID Connect';
-comment on column parlour_private.account.external_id is 'External account identifier in idp';
+comment on column parlour_private.account.idp_id is 'External account identifier in idp';
 
 drop function if exists parlour_public.register_user;
 create function parlour_public.register_user(
@@ -114,27 +116,28 @@ create function parlour_public.register_user(
 	first_name text,
 	email text,
 	about text,
+	prof_url text,
 	idp parlour_public.identityProvider,
-	external_id text
+	idp_id text
 ) returns parlour_public.user as $$
 declare
 	newUser parlour_public.user;
 begin 
-	insert into parlour_public.user (username, first_name, last_name, email, about) values
-	(username, first_name, last_name, email, about)
+	insert into parlour_public.user (username, first_name, last_name, email, about, prof_img_url) values
+	(username, first_name, last_name, email, about, prof_url)
 	returning * into newUser;
 
-	insert into parlour_private.account (uid, idp, external_id) values
-	(newUser.uid, idp, external_id);
+	insert into parlour_private.account (uid, idp, idp_id) values
+	(newUser.uid, idp, idp_id);
 
 	return newUser;
 end;
 $$ language plpgsql volatile security definer ;
 
 comment on function parlour_public.register_user
-	(text, text, text, text, text, parlour_public.identityProvider, text) is 'Register a single user and creates an account';
+	(text, text, text, text, text, text, parlour_public.identityProvider, text) is 'Register a single user and creates an account';
 
-grant execute on function parlour_public.register_user(text, text, text, text, text, parlour_public.identityProvider, text) to parlour_anonymous;
+grant execute on function parlour_public.register_user(text, text, text, text, text, text, parlour_public.identityProvider, text) to parlour_anonymous;
 
 drop type if exists parlour_public.jwt_token cascade;
 create type parlour_public.jwt_token as (

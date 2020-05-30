@@ -1,7 +1,7 @@
 
 export enum IDP {
-  NONE,
-  GOOGLE,
+  NONE = "none",
+  GOOGLE = "google.com"
 }
 
 export enum ACTIONS {
@@ -12,11 +12,17 @@ export enum ACTIONS {
 
 export interface User {
   isSignedIn: boolean;
-  name?: string;
+  username?: string;
+  lastName?: string;
+  firstName?: string;
+  about?: string;
   email?: string;
   idp?: IDP;
-  id?: string;
+  idpId?: string;
   profPicUrl?: string;
+  uid?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AppState {

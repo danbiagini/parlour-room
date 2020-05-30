@@ -3,11 +3,14 @@ import { User, ActionAuthIdp, ACTIONS, IDP } from "./types";
 
 export const signoutIdp = () : ActionAuthIdp => {
   const newUser: User = {
-    name: "",
+    firstName: "",
     email: "",
     idp: IDP.NONE,
     isSignedIn: false,
-    id: ""
+    idpId: "",
+    about: "",
+    username: "",
+    lastName: "",
   };
   return ({
     type: ACTIONS.AUTH_IDP,
@@ -18,11 +21,15 @@ export const signoutIdp = () : ActionAuthIdp => {
 export const signinIdp = (user: User): ActionAuthIdp => {
 
   const newUser: User = {
-    name: user.name,
+    firstName: user.firstName,
     email: user.email,
     idp: user.idp,
     isSignedIn: user.isSignedIn,
-    id: user.id,
+    idpId: user.idpId,
+    lastName: user.lastName,
+    username: user.username,
+    profPicUrl: user.profPicUrl,
+    about: user.about
   };
 	
   const act: ActionAuthIdp = {

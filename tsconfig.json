@@ -18,7 +18,7 @@
     },
     "include": [
         "declaration.d.ts",
-        "src/**/*", "test"
+        "src/**/*", "test", "tools/setup-tests.ts"
     ],
     "exclude": [
         "test/",
