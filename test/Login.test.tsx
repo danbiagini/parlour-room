@@ -1,5 +1,5 @@
 import * as actions from "../src/store/actions";
-import * as types from "../src/store/types";
+import * as types from "../src/common/types";
 import { userReducer as reducer, initUser } from "../src/store/gameReducer";
 import { Login } from "../src/components/Login";
 import { store } from "../src/store/index";
@@ -21,7 +21,7 @@ import "@testing-library/jest-dom";
 
 const partialActAuthIdp: types.ActionAuthIdp = {
   type: types.ACTIONS.AUTH_IDP,
-  payload: null
+  payload: null,
 };
 
 describe("actions", () => {
@@ -32,7 +32,6 @@ describe("actions", () => {
     };
     expect(actions.signinIdp(testUser)).toEqual(expectedAction);
   });
-
 });
 
 describe("User state reducers", () => {
@@ -43,7 +42,6 @@ describe("User state reducers", () => {
   it("should handle sign in with google", () => {
     expect(reducer(initUser, actions.signinIdp(testUser))).toEqual(testUser);
   });
-
 });
 
 describe("Login with google", () => {
@@ -61,7 +59,7 @@ describe("Login with google", () => {
   //   googleId: "123456789",
   //   tokenId: "token123",
   // };
-    
+
   it("should render a button", () => {
     const { getByText } = render(
       <Provider store={store}>

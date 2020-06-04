@@ -8,6 +8,7 @@ create extension if not exists "citext";
 -- grants
 alter default privileges revoke execute on functions from public;
 grant usage on schema parlour_public to parlour_anonymous, parlour_user;
+grant usage on schema parlour_private to parlour_postgraphile;
 
 drop function if exists parlour_public.set_updated_at cascade;
 create or replace function parlour_private.set_updated_at() returns trigger as $$
@@ -146,3 +147,24 @@ create type parlour_public.jwt_token as (
 	exp bigint
 );
 
+drop function if exists parlour_private.login_user;
+create function parlour_private.login_user(
+	f_idp_id parlour_private.account.idp_id%TYPE, 
+	f_idp parlour_public.identityProvider) returns parlour_public.user as $$
+declare user_row parlour_public.user%ROWTYPE;
+begin
+  select u.* into strict user_row from parlour_public.user as u inner join parlour_private.account as a
+		on u.uid = a.uid
+		where a.idp_id = f_idp_id and a.idp = f_idp;
+  return user_row;
+exception
+    when NO_DATA_FOUND then
+      raise exception 'idp_id not found';
+    when TOO_MANY_ROWS then
+      raise exception 'idp_id ''%'' not unique', f_idp_id;
+
+end;
+$$ language plpgsql stable security definer;
+
+grant execute on function parlour_private.login_user(parlour_private.account.idp_id%TYPE, parlour_public.identityProvider) to parlour_postgraphile;
+comment on function parlour_private.login_user(parlour_private.account.idp_id%TYPE, parlour_public.identityProvider) is 'Login a user based on idp identity.  REQUIRES the identity was already verified!';

@@ -1,5 +1,6 @@
-import { Pool } from "pg";
-import * as types from "../../src/store/types";
+// import { Pool } from "pg";
+import * as types from "../../src/common/types";
+import { poolFromUrl } from "../../src/server/parlour_db";
 
 /*
  * We need to inform jest that these files depend on changes to the database,
@@ -48,47 +49,6 @@ export const testUser: types.User = {
   about: "smart guy",
   username: "notNullThatsForSure",
   profPicUrl: "http://mypic.com/1234567",
-};
-
-const pools = {} as {
-  [key: string]: Pool;
-};
-
-export const poolFromUrl = (url: string, role?: string) => {
-  let key = url;
-  if (!pools[key]) {
-    const p = new Pool({ connectionString: url });
-    if (role) {
-      key = url + role;
-      p.on("connect", (client) => {
-        const q = `SET ROLE ${role}`;
-        client.query(q);
-      });
-      p.on("error", (err, client) => {
-        console.error(`client ${client}  emitted error ${err}`);
-      });
-    }
-    DEBUG_LOG(`created pool: ${key}`);
-    pools[key] = p;
-  }
-  return pools[key];
-};
-
-export const cleanPools = () => {
-  DEBUG_LOG("cleaning the pools");
-
-  return Promise.all(
-    Object.keys(pools).map(async (k: string) => {
-      DEBUG_LOG(`cleaning up pool: ${k}`);
-      try {
-        const p = pools[k];
-        delete pools[k];
-        await p.end();
-      } catch (e) {
-        console.error("Failed to cleanup pool ", e);
-      }
-    })
-  );
 };
 
 export const deleteTestUsers = async () => {

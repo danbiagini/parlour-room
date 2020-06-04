@@ -1,5 +1,5 @@
 import { Reducer } from "redux";
-import { ACTIONS, AppState, User, ActionAuthIdp } from "./types";
+import { ACTIONS, AppState, User, ActionAuthIdp } from "../common/types";
 
 export const initState: AppState = {
   user: null,
@@ -9,7 +9,10 @@ export const initUser: User = {
   isSignedIn: false,
 };
 
-export const userReducer: Reducer<User, ActionAuthIdp> = (state = initUser, action) => {
+export const userReducer: Reducer<User, ActionAuthIdp> = (
+  state = initUser,
+  action
+) => {
   // tslint:disable-next-line: no-console
   console.log("Action:", action);
   switch (action.type) {

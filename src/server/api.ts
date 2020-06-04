@@ -1,5 +1,34 @@
 import * as express from "express";
-import { Pool } from "pg";
+// import { Pool } from "pg";
+import { logger } from "../common/logger";
+import { loginWithGoogleIdToken } from "./google_utils";
+
+// import { url } from 'inspector';
+
+export const api = express.Router();
+
+api.get("/auth/google", (req, res) => {
+  if (req.query.code) {
+    const user = loginWithGoogleIdToken(req.query.code.toString())
+      .then((user) => {
+        if (user.email) {
+          logger.info("got the email ${user.email}, lets render!");
+        }
+
+        if (user.lastName || user.firstName) {
+          logger.info("got the full name: ${user.firstName} ${user.lastName}");
+        }
+        return user;
+      })
+      .catch(() => {
+        logger.info("Unable to get google user info");
+      });
+    res.send(user);
+  } else {
+    logger.info("no code on auth/google request:" + req.params);
+    res.sendStatus(400);
+  }
+});
 
 // export const register = ( app: express.Application ) => {
 //     const oidc = app.locals.oidc;

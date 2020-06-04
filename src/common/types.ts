@@ -1,13 +1,12 @@
-
 export enum IDP {
   NONE = "none",
-  GOOGLE = "google.com"
+  GOOGLE = "google.com",
 }
 
 export enum ACTIONS {
-	AUTH_IDP = "AUTH_IDP",
-	SIGNOUT = "SIGNOUT",
-	INVALID = "INVALID"
+  AUTH_IDP = "AUTH_IDP",
+  SIGNOUT = "SIGNOUT",
+  INVALID = "INVALID",
 }
 
 export interface User {
@@ -50,6 +49,8 @@ export interface ApiError {
   description: string;
 }
 
-export function isApiError(response: ApiError | ApiResponse): response is ApiError {
+export function isApiError(
+  response: ApiError | ApiResponse
+): response is ApiError {
   return (response as ApiResponse).data === undefined;
 }

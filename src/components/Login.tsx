@@ -6,48 +6,46 @@ import { useSelector, useDispatch } from "react-redux";
 import axios, { AxiosError } from "axios";
 
 import pp_logo from "../public/pparlour-logo.png";
-import * as config from "../utils/client_config";
+import * as config from "../common/client_config";
 import { RootState } from "../store/index";
 import { signinIdp, signoutIdp } from "../store/actions";
-import { User, IDP, ApiError, ApiResponse, isApiError } from "../store/types";
+import { User, IDP, ApiError, ApiResponse, isApiError } from "../common/types";
 
 import "./App.scss";
 
 const apiClient = axios.create({
   responseType: "json",
   headers: {
-    "Content-Type": "application/json"
-  }
+    "Content-Type": "application/json",
+  },
 });
 
 export const serverAuth = async (user: User, id_token: string) => {
-
+  console.log("starting server authentication");
   try {
-    const axRes = await apiClient.post<User>("/auth/token", {
-      user: user,
-      token: id_token
+    const axRes = await apiClient.get<User>("/api/auth/google", {
+      params: { code: id_token },
     });
     const response: ApiResponse = {
       data: axRes.data,
-      code: axRes.status
+      code: axRes.status,
     };
 
-    return (response);
+    return response;
   } catch (error) {
     console.log(`error: ${error}`);
     if (error && error.response) {
       const axiosErr = error as AxiosError<ApiError>;
-      return (axiosErr.response.data);
+      return axiosErr.response.data;
     }
     throw error;
   }
 };
 
 export const Login: React.FC = () => {
-
   const isSignedIn = useSelector((state: RootState) => state.isSignedIn);
   if (isSignedIn) {
-    return (<Redirect to="/" />);
+    return <Redirect to="/" />;
   }
   const dispatch = useDispatch();
 
@@ -58,7 +56,9 @@ export const Login: React.FC = () => {
     const email = response.profileObj.email;
     const name = response.profileObj.givenName;
     const last = response.profileObj.familyName;
-    console.log(`${JSON.stringify(response)} hi ${email}, with token ${id_token}`);
+    console.log(
+      `${JSON.stringify(response)} hi ${email}, with token ${id_token}`
+    );
 
     let newUser: User = {
       idpId: id,
@@ -66,8 +66,8 @@ export const Login: React.FC = () => {
       firstName: name,
       email: email,
       profPicUrl: response.profileObj.imageUrl,
-      isSignedIn: true,
-      lastName: last
+      isSignedIn: false,
+      lastName: last,
     };
 
     serverAuth(newUser, id_token)
@@ -77,11 +77,11 @@ export const Login: React.FC = () => {
         } else {
           console.log(`Api error: ${response.code} ${response.description}`);
         }
-      }).catch((error) => {
+        dispatch(signinIdp(newUser));
+      })
+      .catch((error) => {
         console.log(`Error logging in: ${error}`);
       });
-    
-    dispatch(signinIdp(newUser));
   };
 
   const failedGoogle = (error: any) => {
@@ -89,6 +89,7 @@ export const Login: React.FC = () => {
     dispatch(signoutIdp());
   };
 
+  // GoogleLogin default scope is 'profile email'.
   return (
     <Container>
       <Row className="justify-content-md-center">
@@ -97,7 +98,7 @@ export const Login: React.FC = () => {
           <img src={pp_logo} className="App-logo" alt="logo" />
           <p>You are not signed in. Click below to sign in using google.</p>
           <GoogleLogin
-            responseType="id_token token"
+            responseType="id_token"
             clientId={config.googleConfig.clientId}
             onSuccess={responseSuccessGoogle}
             onFailure={failedGoogle}

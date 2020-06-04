@@ -41,6 +41,12 @@
   "bugs": {
     "url": "https://github.com/danbiagini/pandemic-parlour/issues"
   },
+  "browserslist": [
+    "defaults",
+    "not IE 11",
+    "not IE_Mob 11",
+    "maintained node versions"
+  ],
   "homepage": "https://github.com/danbiagini/pandemic-parlour#readme",
   "dependencies": {
     "@graphile-contrib/pg-simplify-inflector": "^6.0.0",

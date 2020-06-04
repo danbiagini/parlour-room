@@ -1,12 +1,11 @@
 // import { Client } from "pg";
-import { User } from "../../src/store/types";
+import { User, IDP } from "../../src/common/types";
 import {
-  testUser,
+  loginUser,
   poolFromUrl,
-  TEST_DATABASE_URL,
   cleanPools,
-  deleteTestData,
-} from "./helper";
+} from "../../src/server/parlour_db";
+import { testUser, TEST_DATABASE_URL, deleteTestData } from "./helper";
 
 afterAll(async () => {
   return cleanPools();
@@ -111,6 +110,20 @@ describe("grant restrictions on mutations ", () => {
               "username": "notNullThatsForSure",
             }
           `);
+  });
+
+  // TODO: fix - depends on user created in previous test
+  it("can login new user", async () => {
+    let u1: User = Object.assign({}, testUser);
+    expect.assertions(1);
+    await expect(loginUser(IDP.GOOGLE, u1.idpId)).resolves.toEqual(u1);
+  });
+
+  it("login fails on invalid idp_id new user", async () => {
+    expect.assertions(1);
+    await expect(loginUser(IDP.GOOGLE, "DoesntExist")).rejects.toThrow(
+      "idp_id not found"
+    );
   });
 
   it("error on new user -- first_name > 80", async () => {

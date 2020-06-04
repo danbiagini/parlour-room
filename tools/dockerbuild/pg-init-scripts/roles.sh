@@ -11,6 +11,12 @@ function create_roles() {
 		drop role if exists parlour_user;
 		create role parlour_user;
 		grant parlour_user to parlour_postgraphile;
+
+		drop role if exists parlour_private;
+		create role parlour_private;
+		grant parlour_user to parlour_private;
+		grant parlour_anonymous to parlour_private;
+		grant parlour_postgraphile to parlour_private;
 EOSQL
 }
 if [ -n "$CREATE_ROLES" ]; then
