@@ -2,9 +2,12 @@ import { Pool } from "pg";
 import { logger } from "../common/logger";
 import { User, IDP } from "../common/types";
 
-// const DB_ANON_USER = process.env.DB_ANON_USER;
-// const DB_ROOT_USER = process.env.DB_POSTGRAHILE_USER;
-const PARLOUR_DB = process.env.POSTGRAPHILE_URL;
+let PARLOUR_DB = process.env.POSTGRAPHILE_URL;
+
+if (process.env.NODE_ENV !== "production") {
+  PARLOUR_DB = process.env.TEST_DATABASE_URL;
+  logger.debug(`using test database: ${PARLOUR_DB}`);
+}
 
 const pools = {} as {
   [key: string]: Pool;

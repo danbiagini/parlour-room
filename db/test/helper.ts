@@ -1,36 +1,30 @@
-// import { Pool } from "pg";
 import * as types from "../../src/common/types";
 import { poolFromUrl } from "../../src/server/parlour_db";
+import { logger } from "../../src/common/logger";
 
 /*
  * We need to inform jest that these files depend on changes to the database,
  * so we write a dummy file after current.sql is imported. This file has to be
  * tracked by git, otherwise `jest --watch` won't pick up changes to it...
  */
-// import { ts } from "./jest.watch.hack";
-// if (ts) {
-//   /*
-//    * ... but we don't want the changes showing up under git, so we throw
-//    * them away again once the tests have been triggered.
-//    */
-//   require("fs").writeFileSync(
-//     `${__dirname}/jest.watch.hack.ts`,
-//     "export const ts = null;\n"
-//   );
-//   /*
-//    * This will trigger Jest's file watching again, but the second time
-//    * `ts` will be null (as above), so:
-//    *
-//    *   a) it won't happen a third time, and
-//    *   b) there will be no git diff, so the tests won't need to re-run
-//    */
-// }
-
-export const DEBUG_LOG = (line: string) => {
-  if (process.env.DEBUG_LOGGING) {
-    console.log(line);
-  }
-};
+import { ts } from "./jest.watch.hack";
+if (ts) {
+  /*
+   * ... but we don't want the changes showing up under git, so we throw
+   * them away again once the tests have been triggered.
+   */
+  require("fs").writeFileSync(
+    `${__dirname}/jest.watch.hack.ts`,
+    "export const ts: any = null;\n"
+  );
+  /*
+   * This will trigger Jest's file watching again, but the second time
+   * `ts` will be null (as above), so:
+   *
+   *   a) it won't happen a third time, and
+   *   b) there will be no git diff, so the tests won't need to re-run
+   */
+}
 
 if (!process.env.TEST_DATABASE_URL) {
   throw new Error("Can't run tests without a TEST_DATABASE_URL");
@@ -52,7 +46,7 @@ export const testUser: types.User = {
 };
 
 export const deleteTestUsers = async () => {
-  DEBUG_LOG(`deleting test users from ${TEST_DATABASE_URL}`);
+  logger.debug(`deleting test users from ${TEST_DATABASE_URL}`);
   try {
     const p = poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER);
     const c = await p.connect();
@@ -73,36 +67,76 @@ export const deleteTestData = async () => {
   }
 };
 
-// let userCreationCounter = 0;
+export const regUser = async (user: types.User) => {
+  const client = await poolFromUrl(
+    TEST_DATABASE_URL,
+    process.env.DB_ANON_USER
+  ).connect();
 
-// export const createUsers = async function createUsers(
-//   client: PoolClient,
-//   count: number = 1,
-//   verified: boolean = true
-// ) {
-//   const users = [];
-//   if (userCreationCounter > 25) {
-//     throw new Error("Too many users created!");
-//   }
-//   for (let i = 0; i < count; i++) {
-//     const userLetter = "abcdefghijklmnopqrstuvwxyz"[userCreationCounter];
-//     userCreationCounter++;
-//     const email = `${userLetter}${i || ""}@b.c`;
-//     const user: types.User = (
-//       await client.query(
-//         `SELECT * FROM app_private.really_create_user(
-//         username := $1,
-// 		email := $2,
-// 		last_name := $3,
-//         first_name := $4,
-// 		about := $5
-//       )`,
-//         [`testuser_${userLetter}`, email, verified, `User ${userLetter}`, null]
-//       )
-//     ).rows[0];
-//     expect(user.idpId).not.toBeNull();
-//     user.email = email;
-//     users.push(user);
-//   }
-//   return users;
-// };
+  try {
+    await client.query("BEGIN;");
+    const result = await client.query(
+      "select * from parlour_public.register_user($1, $2, $3, $4, $5, $6, $7, $8)",
+      [
+        user.username,
+        user.lastName,
+        user.firstName,
+        user.email,
+        user.about,
+        user.profPicUrl,
+        user.idp,
+        user.idpId,
+      ]
+    );
+    expect(result.rowCount).toBe(1);
+    const createdUser: types.User = {
+      firstName: result.rows[0].first_name,
+      lastName: result.rows[0].last_name,
+      username: result.rows[0].username,
+      email: result.rows[0].email,
+      about: result.rows[0].about,
+      profPicUrl: result.rows[0].prof_img_url,
+      isSignedIn: false,
+    };
+    expect(createdUser.uid).not.toBeNull();
+    await client.query("END;");
+    client.release();
+
+    return createdUser;
+  } catch (e) {
+    await client.query("ROLLBACK");
+    client.release();
+    throw e;
+  }
+};
+
+let userCreationCounter = 0;
+
+export const createUsers = async (
+  count: number = 1,
+  idp: types.IDP = types.IDP.GOOGLE
+) => {
+  const users: types.User[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const userLetter = "abcdefghijklmnopqrstuvwxyz"[userCreationCounter];
+    userCreationCounter++;
+    const u: types.User = {
+      email: `${userLetter}${i || ""}@d.b`,
+      isSignedIn: false,
+      firstName: `${i}`,
+      lastName: `${i}Last`,
+      username: userLetter,
+      idp: idp,
+      idpId: userLetter,
+    };
+    await regUser(u)
+      .then((user) => {
+        expect(user.idpId).not.toBeNull();
+        users.push(user);
+      })
+      .catch((err) => {
+        logger.error(`error creating user for tests: ${err}`);
+      });
+  }
+};

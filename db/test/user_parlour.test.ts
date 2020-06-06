@@ -1,11 +1,10 @@
-// import { Client } from "pg";
 import { User, IDP } from "../../src/common/types";
 import {
   loginUser,
   poolFromUrl,
   cleanPools,
 } from "../../src/server/parlour_db";
-import { testUser, TEST_DATABASE_URL, deleteTestData } from "./helper";
+import { testUser, TEST_DATABASE_URL, deleteTestData, regUser } from "./helper";
 
 afterAll(async () => {
   return cleanPools();
@@ -14,62 +13,6 @@ afterAll(async () => {
 beforeAll(async () => {
   await deleteTestData();
 });
-
-async function regUser(user: User) {
-  const client = await poolFromUrl(
-    TEST_DATABASE_URL,
-    process.env.DB_ANON_USER
-  ).connect();
-
-  try {
-    await client.query("BEGIN;");
-    const result = await client.query(
-      "select * from parlour_public.register_user($1, $2, $3, $4, $5, $6, $7, $8)",
-      [
-        user.username,
-        user.lastName,
-        user.firstName,
-        user.email,
-        user.about,
-        user.profPicUrl,
-        user.idp,
-        user.idpId,
-      ]
-    );
-    expect(result.rowCount).toBe(1);
-    const createdUser: User = {
-      firstName: result.rows[0].first_name,
-      lastName: result.rows[0].last_name,
-      username: result.rows[0].username,
-      email: result.rows[0].email,
-      about: result.rows[0].about,
-      profPicUrl: result.rows[0].prof_img_url,
-      isSignedIn: false,
-    };
-    expect(createdUser.uid).not.toBeNull();
-    await client.query("END;");
-    client.release();
-
-    return createdUser;
-  } catch (e) {
-    await client.query("ROLLBACK");
-    client.release();
-    throw e;
-  }
-}
-// username text,
-// last_name text,
-// first_name text,
-// email text,
-// about text,
-// idp parlour_public.identityProvider,
-// external_id text
-
-// const client = new Client({
-//   connectionString: process.env.TEST_DATABASE_URL,
-//   statement_timeout: 5000,
-//   query_timeout: 5000,
-// });
 
 describe("grant restrictions on mutations ", () => {
   it("cannot manually insert a user", async () => {

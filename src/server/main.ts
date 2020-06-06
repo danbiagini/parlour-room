@@ -31,30 +31,6 @@ app.get(["/", "/index.html"], function (req, res) {
 
 app.use("/api", api);
 
-// Configure Express to use EJS
-// app.set("views", path.join(__dirname, "views"));
-// app.set("view engine", "ejs");
-
-// interface IndexInfo {
-//   authUrl: string;
-//   userFullName: string;
-//   userEmail: string;
-// }
-
-// const index: IndexInfo = {
-//   authUrl: urlGoogle(),
-//   userFullName: "",
-//   userEmail: "",
-// };
-
-// const authUrl:string = urlGoogle();
-
-// define a route handler for the default home page
-// app.get("/", (req, res) => {
-//   // render the index template
-//   res.render("index", index);
-// });
-
 // start the express server
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
