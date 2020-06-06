@@ -1,9 +1,5 @@
-import { User, IDP } from "../../src/common/types";
-import {
-  loginUser,
-  poolFromUrl,
-  cleanPools,
-} from "../../src/server/parlour_db";
+import { User, IDP } from "../../common/types";
+import { loginUser, poolFromUrl, cleanPools } from "../../server/parlour_db";
 import { testUser, TEST_DATABASE_URL, deleteTestData, regUser } from "./helper";
 
 afterAll(async () => {

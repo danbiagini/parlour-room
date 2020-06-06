@@ -135,7 +135,7 @@
   /*
    * migrationsFolder: path to the folder in which to store your migrations.
    */
-  migrationsFolder: "./db/migrations",
+  migrationsFolder: "./src/db/migrations",
 
   "//generatedWith": "0.3.1"
 }

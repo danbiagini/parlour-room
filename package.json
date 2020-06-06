@@ -2,11 +2,11 @@
   "name": "pandemic-parlour",
   "version": "1.0.0",
   "description": "Parlour games for families and friends",
-  "main": "dist/src/main.js",
+  "main": "dist/src/server/main.js",
   "scripts": {
     "clean": "rimraf dist/*",
     "copy-assets": "ts-node tools/copyAssets",
-    "lint": "eslint src/ --ext .tsx,.ts,.js,.ejs",
+    "lint": "eslint src/ --ext .tsx,.ts,.js",
     "tsc": "tsc",
     "server-build": "npm run tsc",
     "build": "npm-run-all clean lint server-build client-build",

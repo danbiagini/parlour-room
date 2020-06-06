@@ -7,7 +7,7 @@ import { RootState } from "../store/index";
 
 export const NavBarUI: React.FC = () => {
   const isSignedIn = useSelector((state: RootState) => {
-    return (state.isSignedIn);
+    return state.isSignedIn;
   });
 
   let identityElements = (
@@ -35,7 +35,13 @@ export const NavBarUI: React.FC = () => {
   }
 
   return (
-    <Navbar collapseOnSelect variant="light" expand="lg" bg="light" sticky="top">
+    <Navbar
+      collapseOnSelect
+      variant="light"
+      expand="lg"
+      bg="light"
+      sticky="top"
+    >
       <LinkContainer to="/">
         <Navbar.Brand href="/">
           <img src={pp_logo} />
@@ -43,7 +49,9 @@ export const NavBarUI: React.FC = () => {
         </Navbar.Brand>
       </LinkContainer>
       <Navbar.Toggle aria-controls="responsive-navbar-nav" />
-      <Navbar.Collapse id="responsive-navbar-nav">{identityElements}</Navbar.Collapse>
+      <Navbar.Collapse id="responsive-navbar-nav">
+        {identityElements}
+      </Navbar.Collapse>
     </Navbar>
   );
 };

@@ -6,8 +6,8 @@
         "noImplicitAny": true,
         "moduleResolution": "node",
         "sourceMap": true,
-        "outDir": "dist",
-        "baseUrl": "./src",
+        "outDir": "test_dist",
+        "baseUrl": "../src",
         "allowJs": true,
         "jsx": "react",
         "paths": {
@@ -17,12 +17,7 @@
         }
     },
     "include": [
-        "declaration.d.ts",
-        "src/**/*",
-    ],
-    "exclude": [
-        "**/test/*",
-        "tools/",
-        "test/*"
+        "../declaration.d.ts",
+        "../src/**/*",
     ]
 }

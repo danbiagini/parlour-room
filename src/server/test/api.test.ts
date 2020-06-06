@@ -1,6 +1,6 @@
 import { app } from "../main";
 import { cleanPools } from "../parlour_db";
-import { createUsers, deleteTestData } from "../../../db/test/helper";
+import { createUsers, deleteTestData } from "../../db/test/helper";
 import { agent as request } from "supertest";
 
 beforeAll(async () => {

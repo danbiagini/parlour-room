@@ -1,6 +1,6 @@
-import * as types from "../../src/common/types";
-import { poolFromUrl } from "../../src/server/parlour_db";
-import { logger } from "../../src/common/logger";
+import * as types from "../../common/types";
+import { poolFromUrl } from "../../server/parlour_db";
+import { logger } from "../../common/logger";
 
 /*
  * We need to inform jest that these files depend on changes to the database,

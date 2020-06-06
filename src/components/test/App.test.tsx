@@ -1,5 +1,5 @@
 import React from "react";
-import App from "../src/components/App";
+import App from "../App";
 import TestRenderer from "react-test-renderer";
 import { render, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";

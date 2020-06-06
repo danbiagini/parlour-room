@@ -21,7 +21,9 @@ export default function Routes() {
       <Route exact path="/">
         <Home />
       </Route>
-      <Route exact path="/privacy"><Privacy /></Route>
+      <Route exact path="/privacy">
+        <Privacy />
+      </Route>
       <Route exact path="/oldmaid">
         <Game />
       </Route>

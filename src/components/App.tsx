@@ -12,19 +12,17 @@ interface IState {
   user: GoogleLoginResponse;
 }
 
-
-
 export default class App extends React.Component<{}, IState> {
   public readonly state: Readonly<IState> = {
     isSignedIn: false,
-    user: null
+    user: null,
   };
 
   signIn = (user: GoogleLoginResponse) => {
     console.log("app got a login");
     this.setState({
       isSignedIn: true,
-      user: user
+      user: user,
     });
   };
 

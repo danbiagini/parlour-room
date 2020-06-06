@@ -1,9 +1,9 @@
-import * as actions from "../src/store/actions";
-import * as types from "../src/common/types";
-import { userReducer as reducer, initUser } from "../src/store/gameReducer";
-import { Login } from "../src/components/Login";
-import { store } from "../src/store/index";
-import { testUser } from "../db/test/helper";
+import * as actions from "../../store/actions";
+import * as types from "../../common/types";
+import { userReducer as reducer, initUser } from "../../store/gameReducer";
+import { Login } from "../Login";
+import { store } from "../../store/index";
+import { testUser } from "../../db/test/helper";
 import React from "react";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router";
