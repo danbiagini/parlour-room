@@ -63,6 +63,8 @@ wss.on("close", () => {
   logger.info("Websocket server closed");
 });
 
-server.listen(port, () => {
-  logger.info(`server started at http://localhost:${port}`);
-});
+if (process.env.NODE_ENV != "test") {
+  server.listen(port, () => {
+    logger.info(`server started at http://localhost:${port}`);
+  });
+}

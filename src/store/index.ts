@@ -1,4 +1,3 @@
-
 import { createStore } from "redux";
 import { userReducer } from "./gameReducer";
 import { ActionAuthIdp, User } from "../common/types";

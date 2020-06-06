@@ -126,9 +126,9 @@ export const createUsers = async (
       isSignedIn: false,
       firstName: `${i}`,
       lastName: `${i}Last`,
-      username: userLetter,
+      username: userLetter + userLetter,
       idp: idp,
-      idpId: userLetter,
+      idpId: userLetter + userLetter,
     };
     await regUser(u)
       .then((user) => {

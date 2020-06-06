@@ -1,7 +1,7 @@
 import { User, ActionAuthIdp, ACTIONS, IDP } from "../common/types";
 // import { initUser } from "./gameReducer";
 
-export const signoutIdp = () : ActionAuthIdp => {
+export const signoutIdp = (): ActionAuthIdp => {
   const newUser: User = {
     firstName: "",
     email: "",
@@ -12,14 +12,13 @@ export const signoutIdp = () : ActionAuthIdp => {
     username: "",
     lastName: "",
   };
-  return ({
+  return {
     type: ACTIONS.AUTH_IDP,
-    payload: newUser
-  });
+    payload: newUser,
+  };
 };
 
 export const signinIdp = (user: User): ActionAuthIdp => {
-
   const newUser: User = {
     firstName: user.firstName,
     email: user.email,
@@ -29,13 +28,12 @@ export const signinIdp = (user: User): ActionAuthIdp => {
     lastName: user.lastName,
     username: user.username,
     profPicUrl: user.profPicUrl,
-    about: user.about
+    about: user.about,
   };
-	
+
   const act: ActionAuthIdp = {
     type: ACTIONS.AUTH_IDP,
     payload: newUser,
   };
   return act;
 };
-
