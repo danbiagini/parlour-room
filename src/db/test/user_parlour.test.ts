@@ -38,24 +38,15 @@ describe("grant restrictions on mutations ", () => {
     let u1: User = Object.assign({}, testUser);
     u1.isSignedIn = false;
     expect.assertions(3);
-    await expect(regUser(u1)).resolves.toMatchInlineSnapshot(`
-            Object {
-              "about": "smart guy",
-              "email": "dan@smartguys.com",
-              "firstName": "Dan",
-              "isSignedIn": false,
-              "lastName": "Last",
-              "profPicUrl": "http://mypic.com/1234567",
-              "username": "notNullThatsForSure",
-            }
-          `);
+
+    await expect(regUser(u1)).resolves.toMatchObject(u1);
   });
 
   // TODO: fix - depends on user created in previous test
   it("can login new user", async () => {
     let u1: User = Object.assign({}, testUser);
     expect.assertions(1);
-    await expect(loginUser(IDP.GOOGLE, u1.idpId)).resolves.toEqual(u1);
+    await expect(loginUser(IDP.GOOGLE, u1.idpId)).resolves.toMatchObject(u1);
   });
 
   it("login fails on invalid idp_id new user", async () => {

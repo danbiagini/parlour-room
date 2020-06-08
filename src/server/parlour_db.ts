@@ -77,6 +77,7 @@ export const loginUser = async (idp: IDP, idp_id: string) => {
         email: result.rows[0].email,
         about: result.rows[0].about,
         profPicUrl: result.rows[0].prof_img_url,
+        uid: result.rows[0].uid,
         isSignedIn: true,
         idp: idp,
         idpId: idp_id,

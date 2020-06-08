@@ -109,7 +109,7 @@
        "_": "command",
        "shadow": false,
        //"command": "if [ \"$IN_TESTS\" = \"1\" ]; then ./scripts/test-seed; fi",
-       "command": "d=$(date); echo \"export const ts = '$d'; \n\" > db/test/jest.watch.hack.ts"
+       "command": "d=$(date); echo \"export const ts = '$d'; \n\" > src/db/test/jest.watch.hack.ts"
     }
   ],
 

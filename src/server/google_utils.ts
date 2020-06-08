@@ -59,18 +59,23 @@ const loginWithGoogleIdToken = async (token: string) => {
     .then((ticket) => {
       const payload = ticket.getPayload();
       authUser.idpId = payload["sub"];
-      const domain = payload["hd"];
-      if (payload["iss"] != "accounts.google.com") {
+      if (
+        payload["iss"] != "accounts.google.com" &&
+        payload["iss"] != "https://accounts.google.com"
+      ) {
         logger.debug(
           `token issuer not accounts.google.com, iss: ${payload["iss"]}`
         );
         throw Error("invalid issuer for google.com IDP");
       }
-      logger.debug(`got a valid ID for ${authUser.idpId} in domain ${domain}`);
+      const domain = payload["hd"];
       if (domain != IDP.GOOGLE) {
         logger.debug(`got a login for non google.com domain --> ${domain}`);
         throw Error("invalid domain for Google authentication");
       }
+      logger.debug(
+        `got a valid token, ID for ${authUser.idpId} in domain ${domain}`
+      );
       authUser.idp = IDP.GOOGLE;
     });
 
@@ -79,12 +84,13 @@ const loginWithGoogleIdToken = async (token: string) => {
     .then((result) => {
       // found a user!
       authUser = result;
+      authUser.isSignedIn = true;
     })
     .catch((error) => {
-      if (error == "idp_id not found") {
-        logger.silly(`Sql query error in function login_user: ${error}`);
+      if (error == "error: idp_id not found") {
+        logger.silly(`user not found: ${error}`);
       } else {
-        logger.debug(`Sql login_user function returned error: ${error}`);
+        logger.error(`Sql login_user function returned: ${error}`);
       }
       throw error;
     });

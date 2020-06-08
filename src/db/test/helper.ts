@@ -97,6 +97,9 @@ export const regUser = async (user: types.User) => {
       about: result.rows[0].about,
       profPicUrl: result.rows[0].prof_img_url,
       isSignedIn: false,
+      idp: user.idp,
+      idpId: user.idpId,
+      uid: result.rows[0].uid,
     };
     expect(createdUser.uid).not.toBeNull();
     await client.query("END;");
@@ -110,33 +113,37 @@ export const regUser = async (user: types.User) => {
   }
 };
 
-let userCreationCounter = 0;
+export let userCreationCounter = 0;
+export const testCreatedUsers: types.User[] = [];
 
 export const createUsers = async (
   count: number = 1,
   idp: types.IDP = types.IDP.GOOGLE
 ) => {
-  const users: types.User[] = [];
-
   for (let i = 0; i < count; i++) {
-    const userLetter = "abcdefghijklmnopqrstuvwxyz"[userCreationCounter];
-    userCreationCounter++;
+    const userLetter = "abcdefghijklmnopqrstuvwxyz"[i];
     const u: types.User = {
       email: `${userLetter}${i || ""}@d.b`,
       isSignedIn: false,
-      firstName: `${i}`,
-      lastName: `${i}Last`,
+      firstName: `${userLetter}`,
+      lastName: `${userLetter}_Last`,
       username: userLetter + userLetter,
       idp: idp,
       idpId: userLetter + userLetter,
+      about: userLetter.repeat(10),
     };
     await regUser(u)
       .then((user) => {
-        expect(user.idpId).not.toBeNull();
-        users.push(user);
+        userCreationCounter++;
+        testCreatedUsers.push(user);
       })
       .catch((err) => {
         logger.error(`error creating user for tests: ${err}`);
       });
   }
+  const client = await poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER).connect();
+  await client.query("select count(*) from parlour_public.user").then((res) => {
+    logger.debug("createdUsers results: " + res.rows.length);
+  });
+  client.release();
 };

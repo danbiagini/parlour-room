@@ -7,9 +7,12 @@ import { loginWithGoogleIdToken } from "./google_utils";
 
 export const api = express.Router();
 
-api.get("/auth/google", (req, res) => {
+api.get("/auth/google", async (req, res) => {
+  logger.silly(
+    `beginning /auth/google w/ query param: ${JSON.stringify(req.query)}`
+  );
   if (req.query.code) {
-    const user = loginWithGoogleIdToken(req.query.code.toString())
+    await loginWithGoogleIdToken(req.query.code.toString())
       .then((user) => {
         if (user.email) {
           logger.info("got the email ${user.email}, lets render!");
@@ -18,15 +21,20 @@ api.get("/auth/google", (req, res) => {
         if (user.lastName || user.firstName) {
           logger.info("got the full name: ${user.firstName} ${user.lastName}");
         }
-        return user;
+        return res.json(user);
       })
-      .catch(() => {
-        logger.info("Unable to get google user info");
+      .catch((err) => {
+        logger.debug(`token invalid, err: ${err}`);
+        if (err == "Error: Token used too late,") {
+          return res.status(401).json("Token expired").send();
+        } else if (err == "error: idp_id not found") {
+          return res.status(403).json("User not found").send();
+        }
+        return res.status(401).json("code invalid").send();
       });
-    res.send(user);
   } else {
-    logger.info("no code on auth/google request:" + req.params);
-    res.sendStatus(400);
+    logger.info("no code on auth/google request:" + JSON.stringify(req.params));
+    return res.status(401).json("no auth code present");
   }
 });
 

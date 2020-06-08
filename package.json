@@ -16,7 +16,7 @@
     "dev:server": "nodemon --watch src -e ts,ejs,env --delay 5 --exec npm run dev:server-start",
     "dev": "concurrently \"npm:dev:server\" \"npm:test:watch\" \"npm:dev:client\"",
     "test": "jest",
-    "test:watch": "npm test -- --watch",
+    "test:watch": "npm test -- --watch --runInBand",
     "start": "node .",
     "sec2env": "ts-node tools/gcpSecrets",
     "client-package": "parcel build src/index.html --out-dir dist/public/",
