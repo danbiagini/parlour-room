@@ -18,9 +18,7 @@ export const app: express.Application = express();
 
 // set up logger middleware for request logging
 app.use((req, res, next) => {
-  logger.info(
-    "Received request: " + req.originalUrl + "  response code:" + res.statusCode
-  );
+  logger.info("Received request: " + req.method + " : " + req.originalUrl);
   next();
 });
 

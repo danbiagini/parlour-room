@@ -5,7 +5,6 @@ import {
   deleteTestData,
   testUser,
   testCreatedUsers,
-  userCreationCounter,
 } from "../../db/test/helper";
 import { agent as request } from "supertest";
 import { OAuth2Client, LoginTicket, TokenPayload } from "google-auth-library";
@@ -14,17 +13,28 @@ const mockedVerifyIdToken = jest.fn();
 const mockedGetPayload = jest.fn();
 
 beforeAll(async () => {
+  jest
+    .spyOn(OAuth2Client.prototype, "verifyIdToken")
+    .mockImplementation(mockedVerifyIdToken);
+  jest
+    .spyOn(LoginTicket.prototype, "getPayload")
+    .mockImplementation(mockedGetPayload);
   await deleteTestData();
   await createUsers(10);
 });
 
 afterAll(async () => {
   await cleanPools();
+  jest.restoreAllMocks();
 });
 
 beforeEach(() => {
   mockedVerifyIdToken.mockClear();
   mockedGetPayload.mockClear();
+});
+
+afterEach(() => {
+  validToken.sub = testUser.idpId;
 });
 
 const validToken: TokenPayload = {
@@ -36,12 +46,20 @@ const validToken: TokenPayload = {
   iat: Date.now() - 600,
 };
 
-describe("Auth APIs", () => {
-  OAuth2Client.prototype.verifyIdToken = mockedVerifyIdToken;
-  LoginTicket.prototype.getPayload = mockedGetPayload;
+describe("Auth login API", () => {
+  it("returns 404 when no idp provided", async () => {
+    const res = await request(app).get("/api/auth/login");
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 400 when unsupported idp provided", async () => {
+    const res = await request(app).get("/api/auth/coolauth.com/login");
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual("Unsupported IDP");
+  });
 
   it("returns 401 when no token received", async () => {
-    const res = await request(app).get("/api/auth/google");
+    const res = await request(app).get("/api/auth/google.com/login");
     expect(res.status).toBe(401);
     expect(res.body).toEqual("no auth code present");
   });
@@ -51,7 +69,9 @@ describe("Auth APIs", () => {
     mockedVerifyIdToken.mockRejectedValueOnce(
       Error("Wrong number of segments in token")
     );
-    const res = await request(app).get("/api/auth/google?code=12345679");
+    const res = await request(app).get(
+      "/api/auth/google.com/login?code=12345679"
+    );
     expect(res.status).toBe(401);
     expect(res.body).toEqual("code invalid");
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
@@ -60,7 +80,7 @@ describe("Auth APIs", () => {
   it("returns 401 on expired token", async () => {
     mockedVerifyIdToken.mockRejectedValueOnce(Error("Token used too late,"));
     const res = await request(app).get(
-      "/api/auth/google?code=thisTokenIsSooooOld"
+      "/api/auth/google.com/login?code=thisTokenIsSooooOld"
     );
     expect(res.status).toBe(401);
     expect(res.body).toEqual("Token expired");
@@ -72,29 +92,114 @@ describe("Auth APIs", () => {
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
 
-    const res = await request(app).get("/api/auth/google?code=mocksAsValid");
+    const res = await request(app).get(
+      "/api/auth/google.com/login?code=mocksAsValid"
+    );
     expect(res.status).toBe(403);
     expect(res.body).toEqual("User not found");
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
+    expect(mockedGetPayload.mock.calls).toHaveLength(1);
   });
 
   it("returns 200 on valid user", async () => {
-    console.log(
-      "created users:" +
-        userCreationCounter +
-        ", user 1:" +
-        JSON.stringify(testCreatedUsers[0])
-    );
     const signedInUser = testCreatedUsers[0];
     signedInUser.isSignedIn = true;
     validToken["sub"] = signedInUser.idpId;
     mockedGetPayload.mockReturnValueOnce(validToken);
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
-    const res = await request(app).get("/api/auth/google?code=mocksAsValid");
+    const res = await request(app).get(
+      "/api/auth/google.com/login?code=mocksAsValid"
+    );
     expect(res.status).toBe(200);
 
     expect(res.body).toMatchObject(signedInUser);
+    expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
+    expect(mockedGetPayload.mock.calls).toHaveLength(1);
+  });
+});
+
+describe("Auth register API", () => {
+  it("returns 404 when no idp provided", async () => {
+    const res = await request(app).get("/api/auth/register");
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 on unsupported method GET", async () => {
+    const res = await request(app).get(
+      "/api/auth/google.com/regisger?code=123456"
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 400 when unsupported idp provided", async () => {
+    const res = await request(app).post("/api/auth/coolauth.com/register");
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual("Unsupported IDP");
+  });
+
+  it("returns 401 when no token received", async () => {
+    const res = await request(app).post("/api/auth/google.com/register");
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual("no auth code present");
+  });
+
+  it("returns 401 on garbage token", async () => {
+    mockedVerifyIdToken.mockRejectedValueOnce(
+      Error("Wrong number of segments in token")
+    );
+    const res = await request(app)
+      .post("/api/auth/google.com/register?code=12345679")
+      .type("application/json");
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual("code invalid");
+    expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
+  });
+
+  it("returns 415 on post with no json Content-Type ", async () => {
+    const res = await request(app).post(
+      "/api/auth/google.com/register?code=12345679"
+    );
+    expect(res.status).toBe(415);
+  });
+
+  it("returns 401 on expired token", async () => {
+    mockedVerifyIdToken.mockRejectedValueOnce(Error("Token used too late,"));
+    const res = await request(app)
+      .post("/api/auth/google.com/register?code=this.TokenIs.SooooOld")
+      .type("application/json");
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual("Token expired");
+    expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
+  });
+
+  it("returns 409 on existing user", async () => {
+    const signedInUser = testCreatedUsers[0];
+    signedInUser.isSignedIn = true;
+    validToken["sub"] = signedInUser.idpId;
+    mockedGetPayload.mockReturnValueOnce(validToken);
+    const myTicket: LoginTicket = new LoginTicket();
+    mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
+    const res = await request(app)
+      .post("/api/auth/google.com/register?code=mocksAsValid")
+      .type("application/json");
+    expect(res.status).toBe(409);
+    expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
+  });
+
+  it("returns 200 on valid user", async () => {
+    mockedGetPayload.mockResolvedValueOnce(validToken);
+    const myTicket: LoginTicket = new LoginTicket();
+    mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
+
+    const res = await request(app)
+      .post("/api/auth/google.com/register?code=mocksAsValid")
+      .send(testUser)
+      .type("application/json");
+    expect(res.status).toBe(200);
+    expect(res.type).toBe("application/json");
+    testUser.isSignedIn = false;
+    expect(res.body).toMatchObject(testUser);
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
   });
 });

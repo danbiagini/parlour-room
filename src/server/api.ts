@@ -1,73 +1,87 @@
 import * as express from "express";
-// import { Pool } from "pg";
 import { logger } from "../common/logger";
-import { loginWithGoogleIdToken } from "./google_utils";
-
-// import { url } from 'inspector';
+import {
+  loginWithGoogleIdToken,
+  registerWithGoogleIdToken,
+} from "./google_utils";
+import { User } from "../common/types";
 
 export const api = express.Router();
+api.use(express.json());
 
-api.get("/auth/google", async (req, res) => {
+api.get("/auth/:idp/login", async (req, res) => {
   logger.silly(
-    `beginning /auth/google w/ query param: ${JSON.stringify(req.query)}`
+    `beginning /auth/:idp/login w/ query param: ${JSON.stringify(req.query)}`
   );
-  if (req.query.code) {
-    await loginWithGoogleIdToken(req.query.code.toString())
-      .then((user) => {
-        if (user.email) {
-          logger.info("got the email ${user.email}, lets render!");
-        }
-
-        if (user.lastName || user.firstName) {
-          logger.info("got the full name: ${user.firstName} ${user.lastName}");
-        }
-        return res.json(user);
-      })
-      .catch((err) => {
-        logger.debug(`token invalid, err: ${err}`);
-        if (err == "Error: Token used too late,") {
-          return res.status(401).json("Token expired").send();
-        } else if (err == "error: idp_id not found") {
-          return res.status(403).json("User not found").send();
-        }
-        return res.status(401).json("code invalid").send();
-      });
-  } else {
+  if (req.params.idp != "google.com") {
+    return res.status(400).json("Unsupported IDP").send();
+  }
+  if (!req.query.code) {
     logger.info("no code on auth/google request:" + JSON.stringify(req.params));
     return res.status(401).json("no auth code present");
   }
+  await loginWithGoogleIdToken(req.query.code.toString())
+    .then((user) => {
+      if (user.email) {
+        logger.info("got the email ${user.email}, lets render!");
+      }
+
+      if (user.lastName || user.firstName) {
+        logger.info("got the full name: ${user.firstName} ${user.lastName}");
+      }
+      return res.json(user);
+    })
+    .catch((err) => {
+      logger.debug(`token invalid, err: ${err}`);
+      if (err == "Error: Token used too late,") {
+        return res.status(401).json("Token expired").send();
+      } else if (err == "error: idp_id not found") {
+        return res.status(403).json("User not found").send();
+      }
+      return res.status(401).json("code invalid").send();
+    });
 });
 
-// export const register = ( app: express.Application ) => {
-//     const oidc = app.locals.oidc;
-//     const port = parseInt( process.env.PGPORT || "5432", 10 );
-//     const config = {
-//         database: process.env.PGDATABASE || "postgres",
-//         host: process.env.PGHOST || "localhost",
-//         port,
-//         user: process.env.PGUSER || "postgres"
-//     };
+api.post("/auth/:idp/register", async (req, res) => {
+  logger.silly(
+    `beginning /auth/:idp/register w/ query param: ${JSON.stringify(req.query)}`
+  );
+  if (req.params.idp != "google.com") {
+    return res.status(400).json("Unsupported IDP").send();
+  }
 
-//     const pgp = pgPromise();
-//     const db = pgp( config );
+  if (!req.query.code) {
+    logger.info("no code on auth/google request:" + JSON.stringify(req.params));
+    return res.status(401).json("no auth code present");
+  }
 
-//     app.get( `/api/auth/google`, oidc.ensureAuthenticated(), async ( req: any, res ) => {
-//         try {
-//             const userId = req.userContext.userinfo.sub;
-//             const guitars = await db.any( `
-//                 SELECT
-//                     id
-//                     , brand
-//                     , model
-//                     , year
-//                     , color
-//                 FROM    guitars
-//                 WHERE   user_id = $[userId]
-//                 ORDER BY year, brand, model`, { userId } );
-//             return res.json( guitars );
-//         } catch ( err ) {
-//             // tslint:disable-next-line:no-console
-//             console.error(err);
-//             res.json( { error: err.message || err } );
-//         }
-//     } );
+  if (!req.accepts("application/json")) {
+    return res.status(406).send();
+  }
+
+  if (!req.is("json")) {
+    return res.status(415).send();
+  }
+
+  const postUser: User = req.body;
+  await registerWithGoogleIdToken(req.query.code.toString(), postUser)
+    .then((user) => {
+      if (user.email) {
+        logger.silly(`got the email ${user.email}, lets render!`);
+      }
+
+      if (user.lastName || user.firstName) {
+        logger.silly(`got the full name: ${user.firstName} ${user.lastName}`);
+      }
+      return res.json(user);
+    })
+    .catch((err) => {
+      logger.debug(`token invalid, err: ${err}`);
+      if (err == "Error: Token used too late,") {
+        return res.status(401).json("Token expired").send();
+      } else if (err == "Error: Registration error, user already exists.") {
+        return res.status(409).json("User already exists").send();
+      }
+      return res.status(401).json("code invalid").send();
+    });
+});

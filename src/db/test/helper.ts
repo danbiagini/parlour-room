@@ -1,5 +1,5 @@
 import * as types from "../../common/types";
-import { poolFromUrl } from "../../server/parlour_db";
+import { poolFromUrl, regUser } from "../../server/parlour_db";
 import { logger } from "../../common/logger";
 
 /*
@@ -63,52 +63,6 @@ export const deleteTestData = async () => {
     return deleteTestUsers();
   } catch (e) {
     console.error("unable to delete users, exception:", e);
-    throw e;
-  }
-};
-
-export const regUser = async (user: types.User) => {
-  const client = await poolFromUrl(
-    TEST_DATABASE_URL,
-    process.env.DB_ANON_USER
-  ).connect();
-
-  try {
-    await client.query("BEGIN;");
-    const result = await client.query(
-      "select * from parlour_public.register_user($1, $2, $3, $4, $5, $6, $7, $8)",
-      [
-        user.username,
-        user.lastName,
-        user.firstName,
-        user.email,
-        user.about,
-        user.profPicUrl,
-        user.idp,
-        user.idpId,
-      ]
-    );
-    expect(result.rowCount).toBe(1);
-    const createdUser: types.User = {
-      firstName: result.rows[0].first_name,
-      lastName: result.rows[0].last_name,
-      username: result.rows[0].username,
-      email: result.rows[0].email,
-      about: result.rows[0].about,
-      profPicUrl: result.rows[0].prof_img_url,
-      isSignedIn: false,
-      idp: user.idp,
-      idpId: user.idpId,
-      uid: result.rows[0].uid,
-    };
-    expect(createdUser.uid).not.toBeNull();
-    await client.query("END;");
-    client.release();
-
-    return createdUser;
-  } catch (e) {
-    await client.query("ROLLBACK");
-    client.release();
     throw e;
   }
 };

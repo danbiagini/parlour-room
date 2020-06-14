@@ -3,7 +3,7 @@ import axios from "axios";
 import { logger } from "../common/logger";
 import * as config from "../common/config";
 
-import { loginUser } from "./parlour_db";
+import { loginUser, regUser } from "./parlour_db";
 import { User, IDP } from "../common/types";
 
 /**
@@ -45,7 +45,7 @@ function urlGoogle() {
   return url;
 }
 
-const loginWithGoogleIdToken = async (token: string) => {
+const validateGoogleToken = async (token: string) => {
   let authUser: User = {
     isSignedIn: false,
     idp: IDP.NONE,
@@ -56,8 +56,8 @@ const loginWithGoogleIdToken = async (token: string) => {
       idToken: token,
       audience: config.googleConfig.clientId,
     })
-    .then((ticket) => {
-      const payload = ticket.getPayload();
+    .then(async (ticket) => {
+      const payload = await ticket.getPayload();
       authUser.idpId = payload["sub"];
       if (
         payload["iss"] != "accounts.google.com" &&
@@ -77,7 +77,42 @@ const loginWithGoogleIdToken = async (token: string) => {
         `got a valid token, ID for ${authUser.idpId} in domain ${domain}`
       );
       authUser.idp = IDP.GOOGLE;
+    })
+    .catch((error) => {
+      throw error;
     });
+  return authUser;
+};
+
+export const registerWithGoogleIdToken = async (
+  token: string,
+  newUser: User
+) => {
+  let authUser = await validateGoogleToken(token);
+
+  await loginUser(authUser.idp, authUser.idpId)
+    .then(() => {
+      // login was successful, user already exists!!
+      throw Error(`Registration error, user already exists.`);
+    })
+    .catch((err) => {
+      // the successful regisration case will throw idp_id not found
+      if (err != "error: idp_id not found") {
+        throw err;
+      }
+
+      // ok, the user doesn't already exist, let's proceed with registration
+
+      // make sure new user has the idp & id that were in the auth token!
+      newUser.idp = authUser.idp;
+      newUser.idpId = authUser.idpId;
+    });
+  // return newUser;
+  return await regUser(newUser);
+};
+
+const loginWithGoogleIdToken = async (token: string) => {
+  let authUser = await validateGoogleToken(token);
 
   // Lets see if this user exists
   await loginUser(authUser.idp, authUser.idpId)

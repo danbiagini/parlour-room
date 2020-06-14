@@ -6,7 +6,7 @@ let PARLOUR_DB = process.env.POSTGRAPHILE_URL;
 
 if (process.env.NODE_ENV !== "production") {
   PARLOUR_DB = process.env.TEST_DATABASE_URL;
-  logger.debug(`using test database: ${PARLOUR_DB}`);
+  logger.info(`using test database: ${PARLOUR_DB}`);
 }
 
 const pools = {} as {
@@ -65,6 +65,7 @@ export const loginUser = async (idp: IDP, idp_id: string) => {
     .then((result) => {
       if (result.rows.length != 1) {
         // This shouldn't happen, the pgsql function should raise an exception in this case
+        logger.error(`loginUser returned ${result.rows.length} rows.`);
         throw new Error(`loginUser returned ${result.rows.length} rows.`);
       }
       logger.silly(
@@ -89,4 +90,50 @@ export const loginUser = async (idp: IDP, idp_id: string) => {
     });
   logger.silly(`loginUser query success, returning user ${user}`);
   return user;
+};
+
+export const regUser = async (user: User) => {
+  const p = getParlourDbPool();
+
+  // this may throw, but connection won't get created per node-postgres docs
+  const client = await p.connect();
+
+  try {
+    await client.query("BEGIN");
+    const result = await client.query(
+      "select * from parlour_public.register_user($1, $2, $3, $4, $5, $6, $7, $8)",
+      [
+        user.username,
+        user.lastName,
+        user.firstName,
+        user.email,
+        user.about,
+        user.profPicUrl,
+        user.idp,
+        user.idpId,
+      ]
+    );
+    if (result.rows.length != 1) {
+      throw Error("regUser: Unexpected result rows " + result.rows.length);
+    }
+    const createdUser: User = {
+      firstName: result.rows[0].first_name,
+      lastName: result.rows[0].last_name,
+      username: result.rows[0].username,
+      email: result.rows[0].email,
+      about: result.rows[0].about,
+      profPicUrl: result.rows[0].prof_img_url,
+      isSignedIn: false,
+      idp: user.idp, // idp is not present in the register_user response
+      idpId: user.idpId, // idp_id is not present in the register_user response
+      uid: result.rows[0].uid,
+    };
+    await client.query("COMMIT");
+    return createdUser;
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
 };

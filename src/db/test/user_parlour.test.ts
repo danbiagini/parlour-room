@@ -1,6 +1,11 @@
 import { User, IDP } from "../../common/types";
-import { loginUser, poolFromUrl, cleanPools } from "../../server/parlour_db";
-import { testUser, TEST_DATABASE_URL, deleteTestData, regUser } from "./helper";
+import {
+  loginUser,
+  poolFromUrl,
+  cleanPools,
+  regUser,
+} from "../../server/parlour_db";
+import { testUser, TEST_DATABASE_URL, deleteTestData } from "./helper";
 
 afterAll(async () => {
   return cleanPools();
@@ -37,7 +42,7 @@ describe("grant restrictions on mutations ", () => {
   it("can register a new user", async () => {
     let u1: User = Object.assign({}, testUser);
     u1.isSignedIn = false;
-    expect.assertions(3);
+    expect.assertions(1);
 
     await expect(regUser(u1)).resolves.toMatchObject(u1);
   });
