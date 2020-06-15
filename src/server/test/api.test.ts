@@ -5,6 +5,7 @@ import {
   deleteTestData,
   testUser,
   testCreatedUsers,
+  cleanTestDb,
 } from "../../db/test/helper";
 import { agent as request } from "supertest";
 import { OAuth2Client, LoginTicket, TokenPayload } from "google-auth-library";
@@ -19,11 +20,12 @@ beforeAll(async () => {
   jest
     .spyOn(LoginTicket.prototype, "getPayload")
     .mockImplementation(mockedGetPayload);
-  await deleteTestData();
+  await cleanTestDb();
   await createUsers(10);
 });
 
 afterAll(async () => {
+  await deleteTestData();
   await cleanPools();
   jest.restoreAllMocks();
 });
@@ -182,6 +184,7 @@ describe("Auth register API", () => {
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
     const res = await request(app)
       .post("/api/auth/google.com/register?code=mocksAsValid")
+      .send(signedInUser)
       .type("application/json");
     expect(res.status).toBe(409);
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);

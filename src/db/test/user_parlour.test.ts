@@ -5,14 +5,23 @@ import {
   cleanPools,
   regUser,
 } from "../../server/parlour_db";
-import { testUser, TEST_DATABASE_URL, deleteTestData } from "./helper";
+import {
+  testUser,
+  TEST_DATABASE_URL,
+  deleteTestData,
+  createUsers,
+  testCreatedUsers,
+  cleanTestDb,
+} from "./helper";
 
 afterAll(async () => {
+  await deleteTestData();
   return cleanPools();
 });
 
 beforeAll(async () => {
-  await deleteTestData();
+  cleanTestDb();
+  await createUsers(1, IDP.GOOGLE);
 });
 
 describe("grant restrictions on mutations ", () => {
@@ -39,19 +48,12 @@ describe("grant restrictions on mutations ", () => {
     client.release();
   });
 
-  it("can register a new user", async () => {
-    let u1: User = Object.assign({}, testUser);
-    u1.isSignedIn = false;
-    expect.assertions(1);
-
-    await expect(regUser(u1)).resolves.toMatchObject(u1);
-  });
-
-  // TODO: fix - depends on user created in previous test
   it("can login new user", async () => {
-    let u1: User = Object.assign({}, testUser);
+    let u1 = testCreatedUsers[0];
+    let u2: User = Object.assign({}, u1);
+    u2.isSignedIn = true;
     expect.assertions(1);
-    await expect(loginUser(IDP.GOOGLE, u1.idpId)).resolves.toMatchObject(u1);
+    await expect(loginUser(IDP.GOOGLE, u1.idpId)).resolves.toMatchObject(u2);
   });
 
   it("login fails on invalid idp_id new user", async () => {
@@ -109,5 +111,25 @@ describe("grant restrictions on mutations ", () => {
     await expect(regUser(u1)).rejects.toThrow(
       'new row for relation "user" violates check constraint "user_prof_img_url_check"'
     );
+  });
+});
+
+describe("register new user", () => {
+  it("error on new user already exists", async () => {
+    createUsers(1, IDP.GOOGLE);
+    let u1 = testCreatedUsers[0];
+    expect.assertions(1);
+    await expect(regUser(u1)).rejects.toThrow(
+      'duplicate key value violates unique constraint "user_username_key"'
+    );
+  });
+
+  it("can register a new user", async () => {
+    let u1: User = Object.assign({}, testUser);
+    u1.isSignedIn = false;
+    u1.username = "success";
+    expect.assertions(1);
+    await expect(regUser(u1)).resolves.toMatchObject(u1);
+    testCreatedUsers.push(u1);
   });
 });

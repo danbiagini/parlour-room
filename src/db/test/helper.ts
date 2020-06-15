@@ -8,6 +8,7 @@ import { logger } from "../../common/logger";
  * tracked by git, otherwise `jest --watch` won't pick up changes to it...
  */
 import { ts } from "./jest.watch.hack";
+import { QueryResult } from "pg";
 if (ts) {
   /*
    * ... but we don't want the changes showing up under git, so we throw
@@ -45,14 +46,31 @@ export const testUser: types.User = {
   profPicUrl: "http://mypic.com/1234567",
 };
 
+export const cleanTestDb = async () => {
+  logger.debug("cleanTestDb - beginning database cleanup");
+  const p = poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER);
+  try {
+    await p.query("delete from parlour_public.user");
+    await p.query("delete from parlour_public.parlour");
+  } catch (e) {
+    console.error("cleanTestDb had error:" + e);
+  }
+};
+
 export const deleteTestUsers = async () => {
+  let dels: Promise<QueryResult>[] = [];
   logger.debug(`deleting test users from ${TEST_DATABASE_URL}`);
   try {
     const p = poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER);
-    const c = await p.connect();
-    const q = await c.query("delete from parlour_public.user");
-    c.release();
-    return q;
+    // const c = await p.connect();
+    testCreatedUsers.forEach((u) => {
+      dels.push(
+        p.query("delete from parlour_public.user where username = $1", [
+          u.username,
+        ])
+      );
+    });
+    return await Promise.all(dels);
   } catch (e) {
     console.error("error deleteTestUsers:", e);
   }

@@ -89,25 +89,10 @@ export const registerWithGoogleIdToken = async (
   newUser: User
 ) => {
   let authUser = await validateGoogleToken(token);
+  // make sure new user has the idp & id that were in the auth token!
+  newUser.idp = authUser.idp;
+  newUser.idpId = authUser.idpId;
 
-  await loginUser(authUser.idp, authUser.idpId)
-    .then(() => {
-      // login was successful, user already exists!!
-      throw Error(`Registration error, user already exists.`);
-    })
-    .catch((err) => {
-      // the successful regisration case will throw idp_id not found
-      if (err != "error: idp_id not found") {
-        throw err;
-      }
-
-      // ok, the user doesn't already exist, let's proceed with registration
-
-      // make sure new user has the idp & id that were in the auth token!
-      newUser.idp = authUser.idp;
-      newUser.idpId = authUser.idpId;
-    });
-  // return newUser;
   return await regUser(newUser);
 };
 

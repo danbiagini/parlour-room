@@ -79,7 +79,10 @@ api.post("/auth/:idp/register", async (req, res) => {
       logger.debug(`token invalid, err: ${err}`);
       if (err == "Error: Token used too late,") {
         return res.status(401).json("Token expired").send();
-      } else if (err == "Error: Registration error, user already exists.") {
+      } else if (
+        err ==
+        'error: duplicate key value violates unique constraint "user_username_key"'
+      ) {
         return res.status(409).json("User already exists").send();
       }
       return res.status(401).json("code invalid").send();
