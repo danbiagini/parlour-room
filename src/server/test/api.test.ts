@@ -44,7 +44,6 @@ const validToken: TokenPayload = {
   iss: "accounts.google.com",
   aud: "",
   exp: Date.now() + 600,
-  hd: "google.com",
   iat: Date.now() - 600,
 };
 
@@ -67,7 +66,6 @@ describe("Auth login API", () => {
   });
 
   it("returns 401 on garbage token", async () => {
-    // OAuth2Client.prototype.verifyIdToken = mockedVerifyIdToken;
     mockedVerifyIdToken.mockRejectedValueOnce(
       Error("Wrong number of segments in token")
     );

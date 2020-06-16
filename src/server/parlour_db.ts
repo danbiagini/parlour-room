@@ -4,9 +4,11 @@ import { User, IDP } from "../common/types";
 
 let PARLOUR_DB = process.env.POSTGRAPHILE_URL;
 
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV === "test") {
   PARLOUR_DB = process.env.TEST_DATABASE_URL;
   logger.info(`using test database: ${PARLOUR_DB}`);
+} else if (process.env.NODE_ENV === "development") {
+  logger.info(`parlour_db: ${PARLOUR_DB}`);
 }
 
 const pools = {} as {

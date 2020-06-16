@@ -1,13 +1,10 @@
 import express from "express";
 import path from "path";
-import dotenv from "dotenv";
 import { logger } from "../common/logger";
 import WebSocket from "ws";
 import http from "http";
 
 import { api } from "./api";
-
-dotenv.config();
 
 let port = 8080;
 if (process.env.PORT) {
