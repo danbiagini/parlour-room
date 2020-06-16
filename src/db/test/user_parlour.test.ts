@@ -14,10 +14,10 @@ import {
   cleanTestDb,
 } from "./helper";
 
-// afterAll(async () => {
-//   await deleteTestData();
-//   await cleanPools();
-// });
+afterAll(async () => {
+  await deleteTestData();
+  await cleanPools();
+});
 
 beforeAll(async () => {
   await cleanTestDb();
