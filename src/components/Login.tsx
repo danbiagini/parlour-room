@@ -23,14 +23,13 @@ const apiClient = axios.create({
 export const serverAuth = async (user: User, id_token: string) => {
   console.log("starting server authentication");
   try {
-    const axRes = await apiClient.get<User>("/api/auth/google", {
+    const axRes = await apiClient.get<User>("/api/auth/google.com/login", {
       params: { code: id_token },
     });
     const response: ApiResponse = {
       data: axRes.data,
       code: axRes.status,
     };
-
     return response;
   } catch (error) {
     console.log(`error: ${error}`);

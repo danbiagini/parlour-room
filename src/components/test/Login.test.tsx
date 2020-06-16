@@ -1,7 +1,7 @@
 import * as actions from "../../store/actions";
 import * as types from "../../common/types";
 import { userReducer as reducer, initUser } from "../../store/gameReducer";
-import { Login } from "../Login";
+import { Login, serverAuth } from "../Login";
 import { store } from "../../store/index";
 import { testUser } from "../../db/test/helper";
 import React from "react";
@@ -9,15 +9,17 @@ import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router";
 import { render, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
+import axios from "axios";
 
-// const testUser: types.User = {
-//   isSignedIn: true,
-//   idpId: "12345",
-//   idp: types.IDP.GOOGLE,
-//   firstName: "Dan",
-//   email: "dan@smartguys.com",
-//   about: "smart guy"
-// };
+const axiosMock = jest.fn();
+
+beforeAll(async () => {
+  jest.spyOn(axios, "get").mockImplementation(axiosMock);
+});
+
+afterAll(async () => {
+  jest.restoreAllMocks();
+});
 
 const partialActAuthIdp: types.ActionAuthIdp = {
   type: types.ACTIONS.AUTH_IDP,
@@ -45,21 +47,6 @@ describe("User state reducers", () => {
 });
 
 describe("Login with google", () => {
-  // const prof = {
-  //   name: "Dan Bonj",
-  //   email: "dbonj@smartguys.org",
-  //   googleId: "123456789",
-  //   imageUrl: "https://profiles.dev/123456789",
-  //   familyName: "Bonj",
-  //   givenName: "Dan"
-  // };
-
-  // const resp = {
-  //   profileObj: prof,
-  //   googleId: "123456789",
-  //   tokenId: "token123",
-  // };
-
   it("should render a button", () => {
     const { getByText } = render(
       <Provider store={store}>
@@ -73,9 +60,11 @@ describe("Login with google", () => {
     fireEvent.click(button);
   });
 
-  // it("should setup the User on success", () => {
-  //   let auth = serverAuth(testUser, "token123").then(response => {
-
-  //   });
-  // });
+  it("should setup the User on success", () => {
+    axiosMock.mockResolvedValueOnce({
+      data: testUser,
+      code: 200,
+    });
+    expect(serverAuth(testUser, "token123")).resolves.toBe(testUser);
+  });
 });
