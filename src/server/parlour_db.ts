@@ -34,10 +34,13 @@ export const cleanPools = () => {
 
 export const poolFromUrl = (url: string, role?: string) => {
   let key = url;
+  if (role) {
+    key += role;
+  }
+
   if (!pools[key]) {
     const p = new Pool({ connectionString: url });
     if (role) {
-      key = url + role;
       p.on("connect", (client) => {
         const q = `SET ROLE ${role}`;
         client.query(q);

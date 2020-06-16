@@ -14,13 +14,13 @@ import {
   cleanTestDb,
 } from "./helper";
 
-afterAll(async () => {
-  await deleteTestData();
-  return cleanPools();
-});
+// afterAll(async () => {
+//   await deleteTestData();
+//   await cleanPools();
+// });
 
 beforeAll(async () => {
-  cleanTestDb();
+  await cleanTestDb();
   await createUsers(1, IDP.GOOGLE);
 });
 

@@ -48,10 +48,11 @@ export const testUser: types.User = {
 
 export const cleanTestDb = async () => {
   logger.debug("cleanTestDb - beginning database cleanup");
-  const p = poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER);
+  const p = await poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER);
   try {
     await p.query("delete from parlour_public.user");
     await p.query("delete from parlour_public.parlour");
+    await p.query("delete from parlour_private.account");
   } catch (e) {
     console.error("cleanTestDb had error:" + e);
   }
@@ -78,7 +79,7 @@ export const deleteTestUsers = async () => {
 
 export const deleteTestData = async () => {
   try {
-    return deleteTestUsers();
+    return await deleteTestUsers();
   } catch (e) {
     console.error("unable to delete users, exception:", e);
     throw e;

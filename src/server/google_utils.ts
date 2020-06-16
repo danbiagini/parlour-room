@@ -1,5 +1,4 @@
 import { google } from "googleapis";
-import axios from "axios";
 import { logger } from "../common/logger";
 import * as config from "../common/config";
 
@@ -18,32 +17,6 @@ function createConnection() {
 }
 
 const gOauth = createConnection();
-
-const gClient = axios.create({
-  responseType: "json",
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-/**
- * Get a url which will open the google sign-in page and request access to the scope provided (such as calendar events).
- */
-function getConnectionUrl(auth: any) {
-  return auth.generateAuthUrl({
-    access_type: "offline",
-    prompt: "consent", // access type and approval prompt will force a new refresh token to be made each time signs in
-    scope: config.defaultScope,
-  });
-}
-
-/**
- * Create the google url to be sent to the client.
- */
-function urlGoogle() {
-  const url = getConnectionUrl(gOauth);
-  return url;
-}
 
 const validateGoogleToken = async (token: string) => {
   let authUser: User = {
@@ -68,14 +41,14 @@ const validateGoogleToken = async (token: string) => {
         );
         throw Error("invalid issuer for google.com IDP");
       }
-      const domain = payload["hd"];
-      if (domain != IDP.GOOGLE) {
-        logger.debug(`got a login for non google.com domain --> ${domain}`);
+      const hostedDomain = payload["hd"];
+      if (hostedDomain) {
+        logger.debug(
+          `got a login for non google.com domain --> ${hostedDomain}`
+        );
         throw Error("invalid domain for Google authentication");
       }
-      logger.debug(
-        `got a valid token, ID for ${authUser.idpId} in domain ${domain}`
-      );
+      logger.debug(`got a valid token, ID for ${authUser.idpId}`);
       authUser.idp = IDP.GOOGLE;
     })
     .catch((error) => {
@@ -117,41 +90,4 @@ const loginWithGoogleIdToken = async (token: string) => {
   return authUser;
 };
 
-async function getAccessTokenFromCode(code: string) {
-  await gClient
-    .post("https://oauth2.googleapis.com/token", {
-      client_id: config.googleConfig.clientId,
-      client_secret: config.googleConfig.clientSecret,
-      redirect_uri: config.googleConfig.redirect,
-      grant_type: "authorization_code",
-      code,
-    })
-    .then((res) => {
-      logger.info(res.data); // { access_token, expires_in, token_type, refresh_token }
-      return res.data.access_token;
-    })
-    .catch((err) => {
-      logger.error("unable to get access token, err:" + err);
-      throw err;
-    });
-  return "";
-}
-
-async function getGoogleUser(accessToken: string) {
-  const { data } = await axios({
-    url: "https://www.googleapis.com/oauth2/v2/userinfo",
-    method: "get",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-  logger.info(data);
-  return data;
-}
-
-export {
-  loginWithGoogleIdToken,
-  urlGoogle,
-  getAccessTokenFromCode,
-  getGoogleUser,
-};
+export { loginWithGoogleIdToken };
