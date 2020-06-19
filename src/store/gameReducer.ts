@@ -17,10 +17,10 @@ export const userReducer: Reducer<User, ActionAuthIdp> = (
   console.log("Action:", action);
   switch (action.type) {
     case ACTIONS.AUTH_IDP:
-      if (action.payload && action.payload.isSignedIn) {
+      if (action.payload) {
         return {
           ...state,
-          isSignedIn: true,
+          isSignedIn: action.payload.isSignedIn,
           username: action.payload.username,
           lastName: action.payload.lastName,
           firstName: action.payload.firstName,
@@ -31,8 +31,6 @@ export const userReducer: Reducer<User, ActionAuthIdp> = (
           profPicUrl: action.payload.profPicUrl,
         };
       }
-      // this shouldn't happen, SIGNIN
-      console.warn("signin action called with isSignedIn = false");
       return {
         ...state,
         isSignedIn: false,

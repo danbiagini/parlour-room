@@ -45,8 +45,8 @@ export interface ApiResponse {
 }
 
 export interface ApiError {
-  code: number;
-  description: string;
+  code: string;
+  data: string;
 }
 
 export function isApiError(
