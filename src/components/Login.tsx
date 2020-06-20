@@ -4,6 +4,7 @@ import {
   GoogleLogin,
   GoogleLogout,
   GoogleLoginResponse,
+  useGoogleLogout,
 } from "react-google-login";
 import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
@@ -24,7 +25,7 @@ const apiClient = axios.create({
   },
 });
 
-export const serverAuth = async (user: User, id_token: string) => {
+export const serverAuth = async (_user: User, id_token: string) => {
   console.log("starting server authentication");
   const axRes = await apiClient.get<User>("/api/auth/google.com/login", {
     params: { code: id_token },
@@ -43,7 +44,6 @@ export const Login: React.FC = () => {
   const isSignedIn = useSelector((state: RootState) => state.isSignedIn);
   const idpId = useSelector((state: RootState) => state.idpId);
   const email = useSelector((state: RootState) => state.email);
-  const [showSignup, setShowSignup] = useState(true);
   const history = useHistory();
   const dispatch = useDispatch();
 
@@ -99,16 +99,22 @@ export const Login: React.FC = () => {
     dispatch(signoutIdp());
   };
 
-  const logoutGoogle = () => {
+  const logoutGoogleSuccess = () => {
     console.log(`logged out: ${idpId}`);
-    setShowSignup(true);
     dispatch(signoutIdp());
   };
 
-  const handleNoShow = () => setShowSignup(false);
+  const { signOut } = useGoogleLogout({
+    clientId: config.googleConfig.clientId,
+    onLogoutSuccess: logoutGoogleSuccess,
+  });
+
+  const handleNoShow = () => {
+    signOut();
+  };
   const goToSignup = () => history.push("/signup");
   let alert = undefined;
-  if (!isSignedIn && idpId && showSignup) {
+  if (!isSignedIn && idpId) {
     alert = (
       <Modal.Dialog>
         <Modal.Header closeButton onHide={handleNoShow}>
@@ -138,7 +144,7 @@ export const Login: React.FC = () => {
               <h3>Sign Out</h3>
               <GoogleLogout
                 clientId={config.googleConfig.clientId}
-                onLogoutSuccess={logoutGoogle}
+                onLogoutSuccess={logoutGoogleSuccess}
                 buttonText="Logout"
               />
             </div>
