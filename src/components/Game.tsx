@@ -6,39 +6,36 @@ import * as React from "react";
 
 import { GAME_HEIGHT, GAME_WIDTH } from "./config";
 
-export interface IGameProps { }
+export interface IGameProps {}
 
 export default class IGame extends React.Component<IGameProps, any> {
-	componentDidMount() {
+  componentDidMount() {
+    const config = {
+      type: Phaser.AUTO,
+      parent: "phaser-example",
+      width: GAME_WIDTH,
+      height: GAME_HEIGHT,
+      scene: [OldMaid],
+    };
 
+    // export default new Game(config)
 
-		const config = {
-			type: Phaser.AUTO,
-			parent: "phaser-example",
-			width: GAME_WIDTH,
-			height: GAME_HEIGHT,
-			scene: [OldMaid]
-		};
+    // const config: GameConfig = {
+    //     type: Phaser.AUTO,
+    //     width: GAME_WIDTH,
+    //     height: GAME_HEIGHT,
+    //     parent: "phaser-game",
+    //     scene: [ExampleScene]
+    // };
 
-		// export default new Game(config)
+    new Phaser.Game(config);
+  }
 
+  shouldComponentUpdate() {
+    return false;
+  }
 
-		// const config: GameConfig = {
-		//     type: Phaser.AUTO,
-		//     width: GAME_WIDTH,
-		//     height: GAME_HEIGHT,
-		//     parent: "phaser-game",
-		//     scene: [ExampleScene]
-		// };
-
-		new Phaser.Game(config);
-	}
-
-	shouldComponentUpdate() {
-		return false;
-	}
-
-	public render() {
-		return <div id="phaser-game" />;
-	}
+  public render() {
+    return <div id="phaser-game" />;
+  }
 }
