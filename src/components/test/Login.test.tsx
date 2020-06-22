@@ -1,7 +1,7 @@
 import * as actions from "../../store/actions";
 import * as types from "../../common/types";
 import { userReducer as reducer, initUser } from "../../store/gameReducer";
-import { Login, serverAuth } from "../Login";
+import { Login } from "../Login";
 import { store } from "../../store/index";
 import { testUser } from "../../db/test/helper";
 import React from "react";
@@ -10,6 +10,7 @@ import { MemoryRouter } from "react-router";
 import { render, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import axios from "axios";
+import { serverAuth } from "../Auth";
 
 const axiosMock = jest.fn();
 

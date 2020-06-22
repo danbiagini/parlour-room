@@ -1,4 +1,4 @@
-import {createProxyMiddleware} from "http-proxy-middleware";
+import { createProxyMiddleware } from "http-proxy-middleware";
 import Bundler from "parcel-bundler";
 import express from "express";
 
