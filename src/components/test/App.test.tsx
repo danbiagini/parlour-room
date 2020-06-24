@@ -15,7 +15,6 @@ test("App can render correctly", () => {
 describe("render the App in the DOM, and navigate", () => {
   test("render the App in the DOM, and display About component", () => {
     const { getByText } = render(<App />);
-    expect(getByText("Wikipedia"));
     expect(getByText("A Place for", { exact: false }));
     expect(getByText("Login"));
   });

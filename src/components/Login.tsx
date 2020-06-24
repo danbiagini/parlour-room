@@ -1,5 +1,6 @@
 import React from "react";
-import { Container, Row, Col, Modal, Button } from "react-bootstrap";
+// import { Modal } from "react-bootstrap";
+import { Box, Button, Heading, Text, Layer } from "grommet";
 import {
   GoogleLogin,
   GoogleLogout,
@@ -7,16 +8,13 @@ import {
   useGoogleLogout,
 } from "react-google-login";
 import { useSelector, useDispatch } from "react-redux";
+import { useHistory } from "react-router-dom";
 
-// import pp_logo from "../public/pparlour-logo.png";
 import * as config from "../common/client_config";
 import { RootState } from "../store/index";
 import { signinIdp, signoutIdp } from "../store/actions";
 import { User, IDP } from "../common/types";
 import { serverAuth } from "./Auth";
-
-import "./App.scss";
-import { useHistory } from "react-router-dom";
 
 export const Login: React.FC = () => {
   const isSignedIn = useSelector((state: RootState) => state.isSignedIn);
@@ -94,55 +92,68 @@ export const Login: React.FC = () => {
   let alert = undefined;
   if (!isSignedIn && idpId) {
     alert = (
-      <Modal.Dialog>
-        <Modal.Header closeButton onHide={handleNoShow}>
-          <Modal.Title>Parlour Account Not Found</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          No Parlour account found for Google account <b>{email}</b>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="primary" onClick={goToSignup}>
-            Sign up with this google account
-          </Button>
-        </Modal.Footer>
-      </Modal.Dialog>
+      <Layer
+        position="center"
+        onClickOutside={handleNoShow}
+        onEsc={handleNoShow}
+      >
+        <Box pad="medium" gap="small" width="medium">
+          <Heading level={3}>Parlour Account Not Found</Heading>
+          <Text>
+            No Parlour account found for Google account <b>{email}</b>, would
+            you like to sign up?
+          </Text>
+          <Box
+            as="footer"
+            gap="small"
+            direction="row"
+            align="center"
+            justify="center"
+          >
+            <Button onClick={goToSignup} label="Sign up" primary />
+            <Button onClick={handleNoShow} label="Cancel" />
+          </Box>
+        </Box>
+      </Layer>
     );
   }
 
   // GoogleLogin default scope is 'profile email'.
   return (
-    <Container>
-      <Row className="justify-content-md-center">
-        <Col className="text-center" md={3}>
-          {/* <img src={pp_logo} className="App-logo" alt="logo" /> */}
-          {alert ? alert : <div />}
-          {isSignedIn || idpId ? (
-            <div>
-              <h3>Sign Out</h3>
-              <GoogleLogout
-                clientId={config.googleConfig.clientId}
-                onLogoutSuccess={logoutGoogleSuccess}
-                buttonText="Logout"
-              />
-            </div>
-          ) : (
-            <div>
-              <h3>Sign In</h3>
-              <p>You are not signed in. Click below to sign in using Google.</p>
-              <GoogleLogin
-                responseType="id_token"
-                clientId={config.googleConfig.clientId}
-                onSuccess={responseSuccessGoogle}
-                onFailure={failedGoogle}
-                buttonText="Sign in with Google"
-                cookiePolicy={"single_host_origin"}
-                isSignedIn
-              />
-            </div>
-          )}
-        </Col>
-      </Row>
-    </Container>
+    <Box fill="vertical" justify="center" align="center" flex="shrink">
+      {alert ? alert : <div />}
+      {isSignedIn || idpId ? (
+        <Box alignContent="center" align="center">
+          <Heading level={3}>Sign Out</Heading>
+          <Box direction="row" pad="large" width="medium" justify="center">
+            <GoogleLogout
+              clientId={config.googleConfig.clientId}
+              onLogoutSuccess={logoutGoogleSuccess}
+              buttonText="Logout"
+            />
+          </Box>
+        </Box>
+      ) : (
+        <Box alignContent="center" align="center">
+          <Heading alignSelf="center" level={3}>
+            Sign In
+          </Heading>
+          <Text>
+            You are not signed in. Click below to sign in using Google.
+          </Text>
+          <Box direction="row" pad="large" width="medium" justify="center">
+            <GoogleLogin
+              responseType="id_token"
+              clientId={config.googleConfig.clientId}
+              onSuccess={responseSuccessGoogle}
+              onFailure={failedGoogle}
+              buttonText="Sign in with Google"
+              cookiePolicy={"single_host_origin"}
+              isSignedIn
+            />
+          </Box>
+        </Box>
+      )}
+    </Box>
   );
 };

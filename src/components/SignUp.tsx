@@ -19,8 +19,6 @@ import { RootState } from "../store/index";
 import { signinIdp, signoutIdp } from "../store/actions";
 import { User, IDP, ApiError, ApiResponse, isApiError } from "../common/types";
 
-import "./App.scss";
-
 export const SignUp: React.FC = () => {
   const isSignedIn = useSelector((state: RootState) => state.isSignedIn);
   // if (isSignedIn) {

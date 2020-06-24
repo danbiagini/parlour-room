@@ -2,85 +2,111 @@
 
 exports[`App can render correctly 1`] = `
 <div
-  className="App container"
+  className="StyledGrommet-sc-19lkkz7-0 kPhklg"
 >
-  <nav
-    className="navbar navbar-expand-lg navbar-light bg-light sticky-top"
+  <div
+    className="StyledBox-sc-13pk1d4-0 cpUkfU"
   >
-    <a
-      className="active navbar-brand"
-      href="/"
-      onClick={[Function]}
-      style={Object {}}
+    <header
+      className="StyledBox-sc-13pk1d4-0 kDJoJx"
+      style={
+        Object {
+          "position": "relative",
+        }
+      }
     >
-      <img
-        src="test-file-stub"
-      />
-      Pandemic Parlour
-    </a>
-    <button
-      aria-controls="responsive-navbar-nav"
-      aria-label="Toggle navigation"
-      className="navbar-toggler collapsed"
-      onClick={[Function]}
-      type="button"
-    >
-      <span
-        className="navbar-toggler-icon"
-      />
-    </button>
-    <div
-      aria-expanded={null}
-      className="navbar-collapse collapse"
-      id="responsive-navbar-nav"
-    >
-      <div
-        className="ml-auto navbar-nav"
-        onKeyDown={[Function]}
+      <button
+        className="StyledButton-sc-323bzc-0 ciOHIr"
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onMouseOut={[Function]}
+        onMouseOver={[Function]}
+        type="button"
       >
-        <a
-          className="nav-link"
-          data-rb-event-key="/signup"
-          href="/signup"
-          onClick={[Function]}
-          onKeyDown={[Function]}
+        <div
+          className="StyledBox-sc-13pk1d4-0 dpozuV"
         >
-          Signup
-        </a>
-        <a
-          className="nav-link"
-          data-rb-event-key="/login"
-          href="/login"
+          <img
+            className="StyledImage-ey4zx9-0 jjepGE"
+            height="110px"
+            src="test-file-stub"
+          />
+          <h3
+            className="StyledHeading-sc-1rdh4aw-0 gHStfv"
+          >
+            Pandemic Parlour
+          </h3>
+        </div>
+      </button>
+      <div
+        className="StyledBox__StyledBoxGap-sc-13pk1d4-1 ffjnxm"
+      />
+      <nav
+        className="StyledBox-sc-13pk1d4-0 jIfxqx"
+      >
+        <button
+          className="StyledButton-sc-323bzc-0 kRgNXf"
+          onBlur={[Function]}
           onClick={[Function]}
-          onKeyDown={[Function]}
+          onFocus={[Function]}
+          onMouseOut={[Function]}
+          onMouseOver={[Function]}
+          type="button"
+        >
+          Sign Up
+        </button>
+        <button
+          className="StyledButton-sc-323bzc-0 kRgNXf"
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onMouseOut={[Function]}
+          onMouseOver={[Function]}
+          type="button"
         >
           Login
-        </a>
-      </div>
-    </div>
-  </nav>
-  <div
-    className="bg-transparent jumbotron"
-  >
-    <div
-      className="lander"
+        </button>
+      </nav>
+    </header>
+    <main
+      className="StyledBox-sc-13pk1d4-0 kvXgc"
     >
-      <h1>
+      <h3
+        className="StyledHeading-sc-1rdh4aw-0 gHStfv"
+      >
         A Place for families and friends to stay connected
-      </h1>
-    </div>
-    <div>
-      <div>
-        According to
-         
-        <a
-          href="https://en.wikipedia.org/wiki/Parlour"
-          title="WIkpedia"
-        >
-          Wikipedia
-        </a>
-        :
-        <br />
+      </h3>
+      <div
+        className="StyledBox__StyledBoxGap-sc-13pk1d4-1 jtjTeE"
+      />
+      <h4
+        className="StyledHeading-sc-1rdh4aw-0 cJdkwo"
+      >
+        Why Pandemic Parlour?
+      </h4>
+      <div
+        className="StyledBox__StyledBoxGap-sc-13pk1d4-1 jtjTeE"
+      />
+      <p
+        className="StyledParagraph-tbetod-0 gfTpGC"
+      >
+        I decided to build Pandemic Parlour for a couple reasons. I've always had a desire to create and build using technology while also providing something useful to others. When the COVID pandemic and quarantining began I noticed a few challenges with keeping connected with families and friends. What we needed was way to have the "inner parlour" for families and friends to congregate, especially for younger kids who don‘t sit still long enough for a video chat. Pandemic Parlour is a place to chat, play games and generally interact. It is designed to be kid safe, and ultimately a way to bridge the technology gap between family members of all ages.
+      </p>
+      <div
+        className="StyledBox__StyledBoxGap-sc-13pk1d4-1 jtjTeE"
+      />
+      <h4
+        className="StyledHeading-sc-1rdh4aw-0 cJdkwo"
+      >
+        What's a Parlour?
+      </h4>
+      <div
+        className="StyledBox__StyledBoxGap-sc-13pk1d4-1 jtjTeE"
+      />
+      <p
+        className="StyledParagraph-tbetod-0 gfTpGC"
+      >
         A 
         <b>
           parlour
@@ -89,90 +115,70 @@ exports[`App can render correctly 1`] = `
         <b>
           parlor
         </b>
-        ) is a
-         
-        <a
-          draggable="true"
-          href="https://en.wikipedia.org/wiki/Reception_room"
-          title="Reception room"
-        >
-          reception room
-        </a>
-         
-        or public space. In
-         
-        <a
-          draggable="true"
-          href="https://en.wikipedia.org/wiki/Middle_Ages"
-          title="Middle Ages"
-        >
-          medieval
-           
-        </a>
-        <a
-          draggable="true"
-          href="https://en.wikipedia.org/wiki/Christianity"
-          title="Christianity"
-        >
-          Christian
-           
-        </a>
-        Europe, the "outer parlour" was the room where the monks or nuns conducted business with those outside the monastery and the "inner parlour" was used for necessary conversation between resident members. In the English-speaking world of the 18th and 19th century, having a parlour room was evidence of social status.
-      </div>
-    </div>
-    <br />
-    <div>
-      <div>
-        <h3>
-          Why Pandemic Parlour
-        </h3>
-      </div>
+        ) is a reception room or public space. In Medieval Christian Europe, the "outer parlour" was the room where the monks or nuns conducted business with those outside the monastery and the "inner parlour" was used for necessary conversation between resident members. In the English-speaking world of the 18th and 19th century, having a parlour room was evidence of social status.
+      </p>
+    </main>
+    <footer
+      className="StyledBox-sc-13pk1d4-0 ftYcBg"
+    >
       <div
-        id="ifuvf"
-        title="Pandemic_Mission"
+        className="StyledBox-sc-13pk1d4-0 bIdaiR"
       >
-        <div>
-          I decided to build Pandemic Parlour for a couple reasons. I've always had a desire to create and build using technology while also providing something useful to others. When the COVID pandemic and quarantining began I noticed a few challenges with keeping connected with families and friends. What we needed was way to have the "inner parlour" for families and friends to congregate, especially for younger kids who don‘t sit still long enough for a video chat. Pandemic Parlour is a place to chat, play games and generally interact. It is designed to be kid safe, and ultimately a way to bridge the technology gap between family members of all ages. 
-          <br />
+        <a
+          className="StyledAnchor-sc-1rp7lwl-0 hHCiZt"
+          href="/"
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+        >
+          <div
+            className="StyledBox-sc-13pk1d4-0 iZrXsK"
+          >
+            <img
+              className="StyledImage-ey4zx9-0 jBVMKL"
+              src="test-file-stub"
+            />
+            <div
+              className="StyledBox__StyledBoxGap-sc-13pk1d4-1 ffjnxm"
+            />
+            <span
+              className="StyledText-sc-1sadyjn-0 laLPYD"
+            >
+              Home
+            </span>
+          </div>
+        </a>
+        <div
+          className="StyledBox__StyledBoxGap-sc-13pk1d4-1 cxqgXz"
+        />
+        <div
+          className="StyledBox-sc-13pk1d4-0 dIPrTC"
+        >
+          <a
+            className="StyledAnchor-sc-1rp7lwl-0 hHCiZt"
+            href="/privacy"
+            onBlur={[Function]}
+            onClick={[Function]}
+            onFocus={[Function]}
+          >
+            <span
+              className="StyledText-sc-1sadyjn-0 laLPYD"
+            >
+              Privacy
+            </span>
+          </a>
         </div>
       </div>
-    </div>
-  </div>
-  <nav
-    className="navbar navbar-expand navbar-light bg-light fixed-bottom"
-  >
-    <a
-      className="navbar-brand"
-      href="/"
-    >
-      <img
-        src="test-file-stub"
+      <div
+        className="StyledBox__StyledBoxGap-sc-13pk1d4-1 cxqgXz"
       />
-    </a>
-    <div
-      className="navbar-nav"
-      onKeyDown={[Function]}
-    >
-      <a
-        className="active nav-link"
-        data-rb-event-key="/about"
-        href="/about"
-        onClick={[Function]}
-        onKeyDown={[Function]}
-        style={Object {}}
+      <span
+        className="StyledText-sc-1sadyjn-0 btJJDp"
+        size="small"
       >
-        About
-      </a>
-      <a
-        className="nav-link"
-        data-rb-event-key="privacy"
-        href="privacy"
-        onClick={[Function]}
-        onKeyDown={[Function]}
-      >
-        Privacy
-      </a>
-    </div>
-  </nav>
+        © 2020 Copyright Three Bees
+      </span>
+    </footer>
+  </div>
 </div>
 `;

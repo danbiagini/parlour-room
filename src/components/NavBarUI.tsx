@@ -1,9 +1,10 @@
 import React from "react";
-import { Navbar, Nav } from "react-bootstrap";
 import pp_logo from "../public/pparlour-logo.png";
-import { LinkContainer } from "react-router-bootstrap";
+import { Box, Header, Heading, Image, Nav } from "grommet";
+// import { Notification } from "grommet-icons";
 import { useSelector } from "react-redux";
 import { RootState } from "../store/index";
+import RoutedButton from "./RoutedButton";
 
 export const NavBarUI: React.FC = () => {
   const isSignedIn = useSelector((state: RootState) => {
@@ -11,47 +12,53 @@ export const NavBarUI: React.FC = () => {
   });
 
   let identityElements = (
-    <Nav className="ml-auto">
-      <LinkContainer to="/account">
-        <Nav.Link>Account</Nav.Link>
-      </LinkContainer>
-      <LinkContainer to="/logout">
-        <Nav.Link>Logout</Nav.Link>
-      </LinkContainer>
-    </Nav>
+    <React.Fragment>
+      <RoutedButton path="/account" label="Account" />
+      <RoutedButton path="/logout" label="Logout" />
+    </React.Fragment>
   );
 
   if (!isSignedIn) {
     identityElements = (
-      <Nav className="ml-auto">
-        <LinkContainer to="/signup">
-          <Nav.Link>Signup</Nav.Link>
-        </LinkContainer>
-        <LinkContainer to="/login">
-          <Nav.Link>Login</Nav.Link>
-        </LinkContainer>
-      </Nav>
+      <React.Fragment>
+        <RoutedButton path="/signup" label="Sign Up" />
+        <RoutedButton path="/login" label="Login" />
+      </React.Fragment>
     );
   }
 
   return (
-    <Navbar
-      collapseOnSelect
-      variant="light"
-      expand="lg"
-      bg="light"
-      sticky="top"
+    <Header
+      height="120px"
+      background="brand"
+      pad="xsmall"
+      gap="small"
+      elevation="none"
+      style={{ position: "relative" }}
     >
-      <LinkContainer to="/">
-        <Navbar.Brand href="/">
-          <img src={pp_logo} />
-          Pandemic Parlour
-        </Navbar.Brand>
-      </LinkContainer>
-      <Navbar.Toggle aria-controls="responsive-navbar-nav" />
-      <Navbar.Collapse id="responsive-navbar-nav">
+      <RoutedButton hoverIndicator={true} path="/">
+        <Box
+          flex={false}
+          direction="row"
+          align="center"
+          margin={{ left: "small" }}
+        >
+          <Image
+            height="110px"
+            src={pp_logo}
+            margin={{
+              left: "small",
+              right: "small",
+              top: "xsmall",
+              bottom: "xsmall",
+            }}
+          />
+          <Heading level="3">Pandemic Parlour</Heading>
+        </Box>
+      </RoutedButton>
+      <Nav direction="row" pad="medium" background="brand">
         {identityElements}
-      </Navbar.Collapse>
-    </Navbar>
+      </Nav>
+    </Header>
   );
 };

@@ -56,6 +56,8 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "googleapis": "^48.0.0",
+    "grommet": "^2.14.0",
+    "grommet-icons": "^4.4.0",
     "jquery": "^3.5.0",
     "phaser": "^3.22.0",
     "popper.js": "^1.16.1",
@@ -69,6 +71,7 @@
     "react-router-bootstrap": "^0.25.0",
     "react-router-dom": "^5.1.2",
     "redux": "^4.0.5",
+    "styled-components": "^5.1.1",
     "winston": "^3.2.1",
     "ws": "^7.2.3"
   },
