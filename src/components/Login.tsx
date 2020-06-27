@@ -1,5 +1,4 @@
 import React from "react";
-// import { Modal } from "react-bootstrap";
 import { Box, Button, Heading, Text, Layer } from "grommet";
 import {
   GoogleLogin,
@@ -24,7 +23,6 @@ export const Login: React.FC = () => {
   const dispatch = useDispatch();
 
   const responseSuccessGoogle = (response: GoogleLoginResponse) => {
-    // const whoami = response.getBasicProfile();
     const id = response.googleId;
     const id_token = response.tokenId;
     const email = response.profileObj.email;

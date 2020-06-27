@@ -2,7 +2,7 @@
 
 exports[`App can render correctly 1`] = `
 <div
-  className="StyledGrommet-sc-19lkkz7-0 kPhklg"
+  className="StyledGrommet-sc-19lkkz7-0 bELdlv"
 >
   <div
     className="StyledBox-sc-13pk1d4-0 cpUkfU"
@@ -46,7 +46,7 @@ exports[`App can render correctly 1`] = `
         className="StyledBox-sc-13pk1d4-0 jIfxqx"
       >
         <button
-          className="StyledButton-sc-323bzc-0 kRgNXf"
+          className="StyledButton-sc-323bzc-0 jyjnth"
           onBlur={[Function]}
           onClick={[Function]}
           onFocus={[Function]}
@@ -56,8 +56,11 @@ exports[`App can render correctly 1`] = `
         >
           Sign Up
         </button>
+        <div
+          className="StyledBox__StyledBoxGap-sc-13pk1d4-1 ffjnxm"
+        />
         <button
-          className="StyledButton-sc-323bzc-0 kRgNXf"
+          className="StyledButton-sc-323bzc-0 jyjnth"
           onBlur={[Function]}
           onClick={[Function]}
           onFocus={[Function]}

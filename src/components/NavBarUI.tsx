@@ -11,20 +11,16 @@ export const NavBarUI: React.FC = () => {
     return state.isSignedIn;
   });
 
-  let identityElements = (
-    <React.Fragment>
-      <RoutedButton path="/account" label="Account" />
-      <RoutedButton path="/logout" label="Logout" />
-    </React.Fragment>
-  );
+  let identityElements = [
+    <RoutedButton key="account" path="/account" label="Account" />,
+    <RoutedButton key="logout" path="/logout" label="Logout" />,
+  ];
 
   if (!isSignedIn) {
-    identityElements = (
-      <React.Fragment>
-        <RoutedButton path="/signup" label="Sign Up" />
-        <RoutedButton path="/login" label="Login" />
-      </React.Fragment>
-    );
+    identityElements = [
+      <RoutedButton key="signup" path="/signup" label="Sign Up" />,
+      <RoutedButton key="login" path="/login" label="Login" />,
+    ];
   }
 
   return (
@@ -56,8 +52,8 @@ export const NavBarUI: React.FC = () => {
           <Heading level="3">Pandemic Parlour</Heading>
         </Box>
       </RoutedButton>
-      <Nav direction="row" pad="medium" background="brand">
-        {identityElements}
+      <Nav direction="row" gap="small" pad="medium" background="brand">
+        {identityElements.map((v) => v)}
       </Nav>
     </Header>
   );

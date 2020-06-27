@@ -6,9 +6,10 @@ import { AppFooter } from "./Footer";
 import { store } from "../store/index";
 import Routes from "./Routes";
 
-import { Box, Grommet } from "grommet";
+import { Box, Grommet, grommet } from "grommet";
+import { deepMerge } from "grommet/utils";
 
-const theme = {
+const theme = deepMerge(grommet, {
   global: {
     font: {
       family: "Roboto",
@@ -19,11 +20,18 @@ const theme = {
       brand: "#228BE6",
     },
   },
-};
+  formField: {
+    border: {
+      color: "border",
+      position: "outer",
+      side: "all",
+    },
+  },
+});
 
 const App: React.FC = () => {
   return (
-    <Grommet theme={theme} themeMode="dark">
+    <Grommet theme={theme} themeMode="light">
       <Box fill flex>
         <BrowserRouter>
           <Provider store={store}>
