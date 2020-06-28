@@ -10,29 +10,33 @@ import {
   Button,
   Avatar,
   TextInput,
+  CheckBox,
 } from "grommet";
 import { FormFieldLabel } from "./FormFieldLabel";
 
 import { Redirect } from "react-router";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 
-// import pp_logo from "../public/pparlour-logo.png";
 import * as config from "../common/client_config";
 import { Alert } from "./Alert";
+import { Spinner } from "./Spinner";
 import { RootState } from "../store/index";
 import { Halt, Edit, Clear, User as UserAvatar } from "grommet-icons";
 import GoogleLogin, { GoogleLoginResponse } from "react-google-login";
 import { User, IDP } from "../common/types";
+import { signinIdp } from "../store/actions";
 // import { serverReg } from "./Auth";
 // import { signinIdp, signoutIdp } from "../store/actions";
 
 export const SignUp: React.FC = () => {
-  const isSignedIn = useSelector((state: RootState) => state.isSignedIn);
-  const currentUser = useSelector((state: RootState) => state);
+  const isSignedIn = useSelector((state: RootState) => state.user.isSignedIn);
+  const currentUser = useSelector((state: RootState) => state.user);
   const [goHome, setGoHome] = useState(false);
   const [formUser, setFormUser] = useState(currentUser);
   const [editAvatar, setEditAvatar] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const showHelp = false; // TODO add a button or something
+  const dispatch = useDispatch();
 
   const idpId = formUser.idpId;
 
@@ -50,25 +54,36 @@ export const SignUp: React.FC = () => {
     const email = response.profileObj.email;
     const name = response.profileObj.givenName;
     const last = response.profileObj.familyName;
-    console.log(
-      `${JSON.stringify(response)} hi ${email}, with token ${id_token}`
-    );
+    // console.log(
+    //   `${JSON.stringify(response)} hi ${email}, with token ${id_token}`
+    // );
 
     let newUser: User = {
       idpId: id,
       idp: IDP.GOOGLE,
       firstName: name,
       email: email,
+      email_subscription: false,
       profPicUrl: response.profileObj.imageUrl,
       isSignedIn: false,
       lastName: last,
     };
 
     setFormUser(newUser);
+    dispatch(signinIdp(newUser, id_token));
+  };
+
+  const onCancel = () => {
+    setGoHome(true);
   };
 
   const submitRegForm = (event: any) => {
-    console.log("submitted: " + JSON.stringify(event.value));
+    console.log("submitted: " + JSON.stringify(event.value, null, "\t"));
+    const newUser: User = event.value;
+    newUser.username = newUser.email;
+    console.log("new user: " + JSON.stringify(newUser));
+    setIsLoading(true);
+    setTimeout(() => setIsLoading(false), 9000);
   };
 
   const clearAvatar = () => {
@@ -99,7 +114,7 @@ export const SignUp: React.FC = () => {
         <Box pad="medium" gap="small" width="medium">
           <Heading level={3}>Get started by signing in with Google</Heading>
           <Text>
-            {"Parlour uses your social login to get basic profile information only. " +
+            {"Parlour uses a social or cloud login to get basic profile information only. " +
               " Don't worry, you will see what info will be used before signing up."}
           </Text>
           <Box direction="row" pad="large" width="medium" justify="center">
@@ -131,26 +146,11 @@ export const SignUp: React.FC = () => {
         <Heading level={3}>Register new user</Heading>
         <Form
           value={formUser}
+          onChange={(nextValue) => setFormUser(nextValue)}
           onSubmit={submitRegForm}
           onReset={() => setFormUser(currentUser)}
           validate="blur"
         >
-          <FormFieldLabel
-            component={TextInput}
-            label="Username"
-            name="username"
-            placeholder="Enter a username"
-            help={
-              showHelp &&
-              "Unique username. Alpha-numeric, no spaces. May include '-' as a separator."
-            }
-            validate={{
-              regexp: /^[A-Za-z0-9-]{3,32}$/,
-              message:
-                "Alpha-numeric, dashes or underscores.  Between 3 & 32 characters",
-            }}
-            required
-          />
           <FormFieldLabel
             component={TextInput}
             label="First Name"
@@ -167,6 +167,11 @@ export const SignUp: React.FC = () => {
             name="email"
             help={showHelp && "Set via your Google account"}
             disabled
+          />
+          <FormFieldLabel
+            label="Receive occassional email updates?"
+            name="email_subscription"
+            component={CheckBox}
           />
           <FormField
             label={
@@ -207,8 +212,22 @@ export const SignUp: React.FC = () => {
             margin={{ top: "medium" }}
             gap="medium"
           >
-            <Button type="submit" label="Submit" primary />
-            <Button label="Cancel" />
+            <Button
+              disabled={isLoading}
+              type="submit"
+              label={
+                !isLoading ? (
+                  "Submit"
+                ) : (
+                  <Box direction="row" gap="small">
+                    <Spinner />
+                    <Text size="small">Loading...</Text>
+                  </Box>
+                )
+              }
+              primary
+            />
+            <Button label="Cancel" onClick={onCancel} />
             <Text
               margin={{ left: "small" }}
               size="small"

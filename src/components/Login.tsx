@@ -16,9 +16,9 @@ import { User, IDP } from "../common/types";
 import { serverAuth } from "./Auth";
 
 export const Login: React.FC = () => {
-  const isSignedIn = useSelector((state: RootState) => state.isSignedIn);
-  const idpId = useSelector((state: RootState) => state.idpId);
-  const email = useSelector((state: RootState) => state.email);
+  const isSignedIn = useSelector((state: RootState) => state.user.isSignedIn);
+  const idpId = useSelector((state: RootState) => state.user.idpId);
+  const email = useSelector((state: RootState) => state.user.email);
   const history = useHistory();
   const dispatch = useDispatch();
 
@@ -28,9 +28,9 @@ export const Login: React.FC = () => {
     const email = response.profileObj.email;
     const name = response.profileObj.givenName;
     const last = response.profileObj.familyName;
-    console.log(
-      `${JSON.stringify(response)} hi ${email}, with token ${id_token}`
-    );
+    // console.log(
+    //   `${JSON.stringify(response)} hi ${email}, with token ${id_token}`
+    // );
 
     let newUser: User = {
       idpId: id,
@@ -57,10 +57,11 @@ export const Login: React.FC = () => {
           newUser.firstName = undefined;
           newUser.email = undefined;
           newUser.profPicUrl = undefined;
+          newUser.email_subscription = undefined;
           newUser.lastName = undefined;
         }
         // setup the user in store
-        dispatch(signinIdp(newUser));
+        dispatch(signinIdp(newUser, id_token));
       })
       .catch((error) => {
         console.log(`Error: ${error}`);

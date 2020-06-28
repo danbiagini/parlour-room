@@ -11,7 +11,7 @@ const apiClient = axios.create({
 export const serverReg = async (user: User, id_token: string) => {
   console.log("starting server new user registration");
   const axRes = await apiClient.post<User>(
-    "/api/auth/google.com/register",
+    `/api/auth/${user.idp}/register`,
     user,
     {
       params: { code: id_token },

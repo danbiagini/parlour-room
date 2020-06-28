@@ -5,13 +5,13 @@ import { Redirect } from "react-router";
 import pp from "../public/pparlour-logo.png";
 
 const Home: React.FC = () => {
-  const isSignedIn = useSelector((state: RootState) => state.isSignedIn);
+  const isSignedIn = useSelector((state: RootState) => state.user.isSignedIn);
 
   if (!isSignedIn) {
     return <Redirect to="/about" />;
   }
 
-  const whoami = useSelector((state: RootState) => state.firstName);
+  const whoami = useSelector((state: RootState) => state.user.firstName);
   let content = <h1>{`Hello ${whoami}, you're signed in`}</h1>;
 
   return (

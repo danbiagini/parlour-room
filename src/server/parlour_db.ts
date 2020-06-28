@@ -81,6 +81,7 @@ export const loginUser = async (idp: IDP, idp_id: string) => {
         lastName: result.rows[0].last_name,
         username: result.rows[0].username,
         email: result.rows[0].email,
+        email_subscription: result.rows[0].email_subscription,
         about: result.rows[0].about,
         profPicUrl: result.rows[0].prof_img_url,
         uid: result.rows[0].uid,
@@ -106,12 +107,13 @@ export const regUser = async (user: User) => {
   try {
     await client.query("BEGIN");
     const result = await client.query(
-      "select * from parlour_public.register_user($1, $2, $3, $4, $5, $6, $7, $8)",
+      "select * from parlour_public.register_user($1, $2, $3, $4, $5, $6, $7, $8, $9)",
       [
         user.username,
         user.lastName,
         user.firstName,
         user.email,
+        user.email_subscription ? user.email_subscription : false,
         user.about,
         user.profPicUrl,
         user.idp,
@@ -126,6 +128,7 @@ export const regUser = async (user: User) => {
       lastName: result.rows[0].last_name,
       username: result.rows[0].username,
       email: result.rows[0].email,
+      email_subscription: result.rows[0].email_subscription,
       about: result.rows[0].about,
       profPicUrl: result.rows[0].prof_img_url,
       isSignedIn: false,

@@ -42,7 +42,7 @@ export const testUser: types.User = {
   firstName: "Dan",
   email: "dan@smartguys.com",
   about: "smart guy",
-  username: "notNullThatsForSure",
+  username: "notNull@thatsforsure.com",
   profPicUrl: "http://mypic.com/1234567",
 };
 
@@ -95,12 +95,13 @@ export const createUsers = async (
 ) => {
   for (let i = 0; i < count; i++) {
     const userLetter = "abcdefghijklmnopqrstuvwxyz"[i];
+    const email = userLetter + i + "@d.jb";
     const u: types.User = {
-      email: `${userLetter}${i || ""}@d.b`,
+      email: email,
       isSignedIn: false,
       firstName: `${userLetter}`,
       lastName: `${userLetter}_Last`,
-      username: userLetter + userLetter,
+      username: email,
       idp: idp,
       idpId: userLetter + userLetter,
       about: userLetter.repeat(10),

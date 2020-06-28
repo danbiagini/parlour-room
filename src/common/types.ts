@@ -16,6 +16,7 @@ export interface User {
   firstName?: string;
   about?: string;
   email?: string;
+  email_subscription?: boolean;
   idp?: IDP;
   idpId?: string;
   profPicUrl?: string;
@@ -26,11 +27,15 @@ export interface User {
 
 export interface AppState {
   user: User;
+  idp_token: string;
 }
 
 export interface ActionAuthIdp {
   type: typeof ACTIONS.AUTH_IDP;
-  payload: Partial<User>;
+  payload: {
+    user: Partial<User>;
+    idp_token: string;
+  };
 }
 
 export interface DispatchAction {

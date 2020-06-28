@@ -8,7 +8,7 @@ import RoutedButton from "./RoutedButton";
 
 export const NavBarUI: React.FC = () => {
   const isSignedIn = useSelector((state: RootState) => {
-    return state.isSignedIn;
+    return state.user.isSignedIn;
   });
 
   let identityElements = [

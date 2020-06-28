@@ -62,6 +62,17 @@ describe("grant restrictions on mutations ", () => {
       "idp_id not found"
     );
   });
+});
+
+describe("register new user", () => {
+  it("error on new user already exists", async () => {
+    createUsers(1, IDP.GOOGLE);
+    let u1 = testCreatedUsers[0];
+    expect.assertions(1);
+    await expect(regUser(u1)).rejects.toThrow(
+      'duplicate key value violates unique constraint "user_username_key"'
+    );
+  });
 
   it("error on new user -- first_name > 80", async () => {
     let u1: User = Object.assign({}, testUser);
@@ -83,16 +94,25 @@ describe("grant restrictions on mutations ", () => {
     );
   });
 
-  it("error on new user -- email > 80", async () => {
+  it("error on new user -- email > 320", async () => {
     let u1: User = Object.assign({}, testUser);
     u1.isSignedIn = false;
-    u1.email = "ThisIsLong".repeat(8);
+    u1.email = "ThisIsLong".repeat(32) + "@smarty.com";
     expect.assertions(1);
     await expect(regUser(u1)).rejects.toThrow(
       'new row for relation "user" violates check constraint "user_email_check"'
     );
   });
 
+  it("error on new user -- email invalid format", async () => {
+    let u1: User = Object.assign({}, testUser);
+    u1.isSignedIn = false;
+    u1.email = "ThisIsNotAnEmail";
+    expect.assertions(1);
+    await expect(regUser(u1)).rejects.toThrow(
+      'new row for relation "user" violates check constraint "user_email_check"'
+    );
+  });
   it("error on new user -- about > 2k", async () => {
     let u1: User = Object.assign({}, testUser);
     u1.isSignedIn = false;
@@ -112,22 +132,11 @@ describe("grant restrictions on mutations ", () => {
       'new row for relation "user" violates check constraint "user_prof_img_url_check"'
     );
   });
-});
-
-describe("register new user", () => {
-  it("error on new user already exists", async () => {
-    createUsers(1, IDP.GOOGLE);
-    let u1 = testCreatedUsers[0];
-    expect.assertions(1);
-    await expect(regUser(u1)).rejects.toThrow(
-      'duplicate key value violates unique constraint "user_username_key"'
-    );
-  });
 
   it("can register a new user", async () => {
     let u1: User = Object.assign({}, testUser);
     u1.isSignedIn = false;
-    u1.username = "success";
+    u1.username = "success-" + testUser.username;
     expect.assertions(1);
     await expect(regUser(u1)).resolves.toMatchObject(u1);
     testCreatedUsers.push(u1);

@@ -22,12 +22,16 @@ $$ language plpgsql;
 drop table if exists parlour_public.user cascade;
 create table parlour_public.user (
 	uid	uuid primary key default gen_random_uuid(),
-	username citext not null unique check (((length((username)::text) >= 2) AND (length((username)::text) <= 24) AND (username OPERATOR(public.~) '^[a-zA-Z]([a-zA-Z0-9][_]?)+$'::public.citext))),
+
+  -- https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
+	username text not null unique check (((length((username)::text) >= 3) AND (length((username)::text) <= 320) AND (username ~ '^[a-zA-Z0-9.!#$%&''*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'))),
 	first_name text check (char_length(first_name) < 80),
 	last_name text check (char_length(last_name) < 80),
-	email text check (char_length(email) < 80),
+	email text check ((char_length(email) < 320) AND (email ~ '^[a-zA-Z0-9.!#$%&''*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$')),
 	about text check (char_length(about) < 2048),
 	prof_img_url text check ((char_length(prof_img_url) < 2048) AND (prof_img_url ~ '^https?://[^/]+'::text)),
+  email_subscription boolean default false,
+  recent_login timestamp,
 	created_at timestamp not null  default now(),
 	updated_at timestamp not null default now()
 );
@@ -38,9 +42,11 @@ comment on column parlour_public.user.username is 'User generated, externally us
 comment on column parlour_public.user.first_name is 'Optional: first name for profile';
 comment on column parlour_public.user.last_name is 'Optional: last name  for profile';
 comment on column parlour_public.user.email is 'Optional: email address for profile';
+comment on column parlour_public.user.email_subscription is 'Boolean, does the user want email';
 comment on column parlour_public.user.about is 'Optional: description / about info for profile';
 comment on column parlour_public.user.created_at is 'Time this user was created';
 comment on column parlour_public.user.updated_at is 'Time this user was last updated';
+comment on column parlour_public.user.recent_login is 'Last time user was seen';
 
 grant select on table parlour_public.user to parlour_anonymous, parlour_user;
 grant update, delete on table parlour_public.user to parlour_user;
@@ -116,6 +122,7 @@ create function parlour_public.register_user(
 	last_name text,
 	first_name text,
 	email text,
+  email_subscription boolean,
 	about text,
 	prof_url text,
 	idp parlour_public.identityProvider,
@@ -124,8 +131,8 @@ create function parlour_public.register_user(
 declare
 	newUser parlour_public.user;
 begin 
-	insert into parlour_public.user (username, first_name, last_name, email, about, prof_img_url) values
-	(username, first_name, last_name, email, about, prof_url)
+	insert into parlour_public.user (username, first_name, last_name, email, about, prof_img_url, email_subscription) values
+	(username, first_name, last_name, email, about, prof_url, email_subscription)
 	returning * into newUser;
 
 	insert into parlour_private.account (uid, idp, idp_id) values
@@ -136,9 +143,9 @@ end;
 $$ language plpgsql volatile security definer ;
 
 comment on function parlour_public.register_user
-	(text, text, text, text, text, text, parlour_public.identityProvider, text) is 'Register a single user and creates an account';
+	(text, text, text, text, boolean, text, text, parlour_public.identityProvider, text) is 'Register a single user and creates an account';
 
-grant execute on function parlour_public.register_user(text, text, text, text, text, text, parlour_public.identityProvider, text) to parlour_anonymous;
+grant execute on function parlour_public.register_user(text, text, text, text, boolean, text, text, parlour_public.identityProvider, text) to parlour_anonymous;
 
 drop type if exists parlour_public.jwt_token cascade;
 create type parlour_public.jwt_token as (
