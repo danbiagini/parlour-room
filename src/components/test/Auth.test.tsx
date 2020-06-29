@@ -15,17 +15,22 @@ import { MemoryRouter } from "react-router";
 import { render, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import axios from "axios";
-import { serverAuth, serverReg } from "../Auth";
+import Auth from "../Auth";
 
+jest.mock("axios");
 const axiosMock = jest.fn();
 
-beforeAll(async () => {
-  jest.spyOn(axios, "get").mockImplementation(axiosMock);
-  jest.spyOn(axios, "post").mockImplementation(axiosMock);
+(axios.create as jest.Mock).mockReturnValue({
+  get: axiosMock,
+  post: axiosMock,
 });
 
 afterAll(async () => {
   jest.restoreAllMocks();
+});
+
+beforeEach(() => {
+  axiosMock.mockClear();
 });
 
 const partialActAuthIdp: types.ActionAuthIdp = {
@@ -79,21 +84,43 @@ describe("Login with google", () => {
     fireEvent.click(button);
   });
 
-  it("should return the User on success", () => {
+  it("should return the User on success", async () => {
     axiosMock.mockResolvedValueOnce({
+      data: testUser,
+      status: 200,
+    });
+    const auth = new Auth();
+    await expect(auth.serverAuth(testUser, "token123")).resolves.toStrictEqual({
       data: testUser,
       code: 200,
     });
-    expect(serverAuth(testUser, "token123")).resolves.toBe(testUser);
+    expect(axiosMock.mock.calls).toHaveLength(1);
   });
 });
 
 describe("Signup with google", () => {
-  it("should return the User on success", () => {
+  it("should render a button", () => {
+    const { getByText } = render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <SignUp />
+        </MemoryRouter>
+      </Provider>
+    );
+    const button = getByText("Sign in with Google");
+    expect(button).toBeTruthy();
+    fireEvent.click(button);
+  });
+  it("should return the User on success", async () => {
     axiosMock.mockResolvedValueOnce({
+      data: testUser,
+      status: 200,
+    });
+    const auth = new Auth();
+    await expect(auth.serverReg(testUser, "token123")).resolves.toStrictEqual({
       data: testUser,
       code: 200,
     });
-    expect(serverReg(testUser, "token123")).resolves.toBe(testUser);
+    expect(axiosMock.mock.calls).toHaveLength(1);
   });
 });

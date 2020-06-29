@@ -31,6 +31,7 @@ const validateGoogleToken = async (token: string) => {
     })
     .then(async (ticket) => {
       const payload = await ticket.getPayload();
+      logger.silly("ticket payload: " + JSON.stringify(payload));
       authUser.idpId = payload["sub"];
       if (
         payload["iss"] != "accounts.google.com" &&
@@ -48,7 +49,14 @@ const validateGoogleToken = async (token: string) => {
         );
         throw Error("invalid domain for Google authentication");
       }
-      logger.debug(`got a valid token, ID for ${authUser.idpId}`);
+
+      if (!payload["email"] || !payload["email_verified"]) {
+        throw Error("email not verified");
+      }
+      authUser.email = payload["email"];
+      logger.debug(
+        `got a valid token, ID for ${authUser.idpId}, email: ${authUser.email}`
+      );
       authUser.idp = IDP.GOOGLE;
     })
     .catch((error) => {
@@ -61,11 +69,21 @@ export const registerWithGoogleIdToken = async (
   token: string,
   newUser: User
 ) => {
-  let authUser = await validateGoogleToken(token);
-  // make sure new user has the idp & id that were in the auth token!
-  newUser.idp = authUser.idp;
-  newUser.idpId = authUser.idpId;
+  await validateGoogleToken(token)
+    .then((googleUser) => {
+      if (googleUser.email != newUser.email) {
+        throw Error("user email doesn't match token");
+      }
 
+      // make sure new user has the idp & id that were in the auth token!
+      newUser.idp = googleUser.idp;
+      newUser.idpId = googleUser.idpId;
+    })
+    .catch((error) => {
+      newUser.idp = null;
+      newUser.idpId = null;
+      throw error;
+    });
   return await regUser(newUser);
 };
 

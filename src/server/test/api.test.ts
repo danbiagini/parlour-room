@@ -45,6 +45,8 @@ const validToken: TokenPayload = {
   aud: "",
   exp: Date.now() + 600,
   iat: Date.now() - 600,
+  email_verified: true,
+  email: testUser.email,
 };
 
 describe("Auth login API", () => {
@@ -156,6 +158,40 @@ describe("Auth register API", () => {
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
   });
 
+  it("returns 409 on email not verified", async () => {
+    const unverifiedEmail = Object.assign({}, validToken);
+    unverifiedEmail["email_verified"] = false;
+    mockedGetPayload.mockResolvedValueOnce(unverifiedEmail);
+    const myTicket: LoginTicket = new LoginTicket();
+    mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
+
+    const res = await request(app)
+      .post("/api/auth/google.com/register?code=mocksAsEmailNotVerified")
+      .send(testUser)
+      .type("application/json");
+    expect(res.status).toBe(409);
+    expect(res.type).toBe("application/json");
+    expect(res.body).toEqual("Error: email not verified");
+    expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
+  });
+
+  it("returns 409 on email doesn't match", async () => {
+    mockedGetPayload.mockResolvedValueOnce(validToken);
+    const myTicket: LoginTicket = new LoginTicket();
+    mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
+
+    const diffEmail = Object.assign({}, testUser);
+    diffEmail.email = "notTheSameEmail@this.fails.com";
+    const res = await request(app)
+      .post("/api/auth/google.com/register?code=mocksAsEmailNotVerified")
+      .send(diffEmail)
+      .type("application/json");
+    expect(res.status).toBe(409);
+    expect(res.type).toBe("application/json");
+    expect(res.body).toEqual("Error: user email doesn't match token");
+    expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
+  });
+
   it("returns 415 on post with no json Content-Type ", async () => {
     const res = await request(app).post(
       "/api/auth/google.com/register?code=12345679"
@@ -175,9 +211,11 @@ describe("Auth register API", () => {
 
   it("returns 409 on existing user", async () => {
     const signedInUser = testCreatedUsers[0];
-    signedInUser.isSignedIn = true;
-    validToken["sub"] = signedInUser.idpId;
-    mockedGetPayload.mockReturnValueOnce(validToken);
+    signedInUser.isSignedIn = false;
+    const dup = Object.assign({}, validToken);
+    dup["email"] = signedInUser.email;
+    dup["sub"] = signedInUser.idpId;
+    mockedGetPayload.mockReturnValueOnce(dup);
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
     const res = await request(app)

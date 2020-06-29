@@ -13,7 +13,7 @@ import * as config from "../common/client_config";
 import { RootState } from "../store/index";
 import { signinIdp, signoutIdp } from "../store/actions";
 import { User, IDP } from "../common/types";
-import { serverAuth } from "./Auth";
+import Auth from "./Auth";
 
 export const Login: React.FC = () => {
   const isSignedIn = useSelector((state: RootState) => state.user.isSignedIn);
@@ -21,6 +21,7 @@ export const Login: React.FC = () => {
   const email = useSelector((state: RootState) => state.user.email);
   const history = useHistory();
   const dispatch = useDispatch();
+  const auth = new Auth();
 
   const responseSuccessGoogle = (response: GoogleLoginResponse) => {
     const id = response.googleId;
@@ -28,9 +29,11 @@ export const Login: React.FC = () => {
     const email = response.profileObj.email;
     const name = response.profileObj.givenName;
     const last = response.profileObj.familyName;
-    // console.log(
-    //   `${JSON.stringify(response)} hi ${email}, with token ${id_token}`
-    // );
+    if (process.env.NODE_ENV != "production") {
+      console.log(
+        `Received google response: ${JSON.stringify(response, null, "\t")}`
+      );
+    }
 
     let newUser: User = {
       idpId: id,
@@ -40,9 +43,12 @@ export const Login: React.FC = () => {
       profPicUrl: response.profileObj.imageUrl,
       isSignedIn: false,
       lastName: last,
+      about: "",
+      email_subscription: false,
     };
 
-    serverAuth(newUser, id_token)
+    auth
+      .serverAuth(newUser, id_token)
       .then((response) => {
         if (response.code === 200) {
           console.log(`Success, logged in ${response.data.idpId}`);
@@ -144,6 +150,7 @@ export const Login: React.FC = () => {
             <GoogleLogin
               responseType="id_token"
               clientId={config.googleConfig.clientId}
+              scope={config.googleConfig.scope.join(" ")}
               onSuccess={responseSuccessGoogle}
               onFailure={failedGoogle}
               buttonText="Sign in with Google"

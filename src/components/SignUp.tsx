@@ -25,17 +25,18 @@ import { Halt, Edit, Clear, User as UserAvatar } from "grommet-icons";
 import GoogleLogin, { GoogleLoginResponse } from "react-google-login";
 import { User, IDP } from "../common/types";
 import { signinIdp } from "../store/actions";
-// import { serverReg } from "./Auth";
-// import { signinIdp, signoutIdp } from "../store/actions";
+import Auth from "./Auth";
 
 export const SignUp: React.FC = () => {
   const isSignedIn = useSelector((state: RootState) => state.user.isSignedIn);
   const currentUser = useSelector((state: RootState) => state.user);
+  const idpToken = useSelector((state: RootState) => state.idp_token);
   const [goHome, setGoHome] = useState(false);
   const [formUser, setFormUser] = useState(currentUser);
   const [editAvatar, setEditAvatar] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const showHelp = false; // TODO add a button or something
+  const auth = new Auth();
   const dispatch = useDispatch();
 
   const idpId = formUser.idpId;
@@ -83,7 +84,19 @@ export const SignUp: React.FC = () => {
     newUser.username = newUser.email;
     console.log("new user: " + JSON.stringify(newUser));
     setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 9000);
+
+    auth
+      .serverReg(newUser, idpToken)
+      .then((response) => {
+        console.log("server response: " + JSON.stringify(response));
+        setIsLoading(false);
+        const authUser: User = Object.assign({}, response.data);
+        dispatch(signinIdp(authUser, idpToken));
+        setGoHome(true);
+      })
+      .catch((err) => {
+        console.log("Error registering new user:" + err);
+      });
   };
 
   const clearAvatar = () => {

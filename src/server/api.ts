@@ -84,6 +84,11 @@ api.post("/auth/:idp/register", async (req, res) => {
         'error: duplicate key value violates unique constraint "user_username_key"'
       ) {
         return res.status(409).json("User already exists").send();
+      } else if (
+        err == "Error: email not verified" ||
+        err == "Error: user email doesn't match token"
+      ) {
+        return res.status(409).json(err.toString());
       }
       return res.status(401).json("code invalid").send();
     });
