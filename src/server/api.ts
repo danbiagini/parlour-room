@@ -66,13 +66,8 @@ api.post("/auth/:idp/register", async (req, res) => {
   const postUser: User = req.body;
   await registerWithGoogleIdToken(req.query.code.toString(), postUser)
     .then((user) => {
-      if (user.email) {
-        logger.silly(`got the email ${user.email}, lets render!`);
-      }
-
-      if (user.lastName || user.firstName) {
-        logger.silly(`got the full name: ${user.firstName} ${user.lastName}`);
-      }
+      logger.debug("created new user: " + JSON.stringify(user));
+      user.isSignedIn = true;
       return res.json(user);
     })
     .catch((err) => {

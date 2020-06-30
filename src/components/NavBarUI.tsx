@@ -1,27 +1,41 @@
 import React from "react";
 import pp_logo from "../public/pparlour-logo.png";
-import { Box, Header, Heading, Image, Nav } from "grommet";
-// import { Notification } from "grommet-icons";
-import { useSelector } from "react-redux";
+import { Box, Header, Heading, Image, Nav, Menu, Avatar } from "grommet";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../store/index";
+import { signoutIdp } from "../store/actions";
 import RoutedButton from "./RoutedButton";
+import { User } from "../common/types";
+
+interface UserMenuProps {
+  logout: () => void;
+  profileUrl: string;
+}
+
+const UserMenu: React.FC<UserMenuProps> = (props: UserMenuProps) => {
+  return (
+    <Menu
+      dropAlign={{ top: "bottom", right: "right" }}
+      icon={false}
+      items={[
+        {
+          label: "Logout",
+          onClick: props.logout,
+        },
+      ]}
+      label={<Avatar src={props.profileUrl} />}
+    />
+  );
+};
 
 export const NavBarUI: React.FC = () => {
-  const isSignedIn = useSelector((state: RootState) => {
-    return state.user.isSignedIn;
-  });
+  const dispatch = useDispatch();
+  const user: User = useSelector((state: RootState) => state.user);
+  const isSignedIn = user.isSignedIn;
 
-  let identityElements = [
-    <RoutedButton key="account" path="/account" label="Account" />,
-    <RoutedButton key="logout" path="/logout" label="Logout" />,
-  ];
-
-  if (!isSignedIn) {
-    identityElements = [
-      <RoutedButton key="signup" path="/signup" label="Sign Up" />,
-      <RoutedButton key="login" path="/login" label="Login" />,
-    ];
-  }
+  const logout = () => {
+    dispatch(signoutIdp());
+  };
 
   return (
     <Header
@@ -53,7 +67,14 @@ export const NavBarUI: React.FC = () => {
         </Box>
       </RoutedButton>
       <Nav direction="row" gap="small" pad="medium" background="brand">
-        {identityElements.map((v) => v)}
+        {isSignedIn ? (
+          <UserMenu logout={logout} profileUrl={user.profPicUrl} />
+        ) : (
+          <Box direction="row" gap="small">
+            <RoutedButton path="/signup" label="Sign Up" />
+            <RoutedButton path="/login" label="Login" />
+          </Box>
+        )}
       </Nav>
     </Header>
   );

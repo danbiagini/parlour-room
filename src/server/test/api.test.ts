@@ -237,7 +237,7 @@ describe("Auth register API", () => {
       .type("application/json");
     expect(res.status).toBe(200);
     expect(res.type).toBe("application/json");
-    testUser.isSignedIn = false;
+    testUser.isSignedIn = true;
     expect(res.body).toMatchObject(testUser);
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
   });

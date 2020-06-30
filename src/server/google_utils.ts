@@ -47,7 +47,8 @@ const validateGoogleToken = async (token: string) => {
         logger.debug(
           `got a login for non google.com domain --> ${hostedDomain}`
         );
-        throw Error("invalid domain for Google authentication");
+        // allowing non google.com domains for now...
+        // throw Error("invalid domain for Google authentication");
       }
 
       if (!payload["email"] || !payload["email_verified"]) {

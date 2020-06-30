@@ -13,6 +13,10 @@ export default class Auth {
     });
   }
 
+  public async logOut(idpLogout: () => void) {
+    return idpLogout();
+  }
+
   public async serverReg(user: User, id_token: string) {
     console.log("starting server new user registration");
     const axRes = await this._apiClient.post<User>(

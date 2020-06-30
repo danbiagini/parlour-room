@@ -45,31 +45,35 @@ exports[`App can render correctly 1`] = `
       <nav
         className="StyledBox-sc-13pk1d4-0 jIfxqx"
       >
-        <button
-          className="StyledButton-sc-323bzc-0 jyjnth"
-          onBlur={[Function]}
-          onClick={[Function]}
-          onFocus={[Function]}
-          onMouseOut={[Function]}
-          onMouseOver={[Function]}
-          type="button"
-        >
-          Sign Up
-        </button>
         <div
-          className="StyledBox__StyledBoxGap-sc-13pk1d4-1 ffjnxm"
-        />
-        <button
-          className="StyledButton-sc-323bzc-0 jyjnth"
-          onBlur={[Function]}
-          onClick={[Function]}
-          onFocus={[Function]}
-          onMouseOut={[Function]}
-          onMouseOver={[Function]}
-          type="button"
+          className="StyledBox-sc-13pk1d4-0 bIdaiR"
         >
-          Login
-        </button>
+          <button
+            className="StyledButton-sc-323bzc-0 jyjnth"
+            onBlur={[Function]}
+            onClick={[Function]}
+            onFocus={[Function]}
+            onMouseOut={[Function]}
+            onMouseOver={[Function]}
+            type="button"
+          >
+            Sign Up
+          </button>
+          <div
+            className="StyledBox__StyledBoxGap-sc-13pk1d4-1 ffjnxm"
+          />
+          <button
+            className="StyledButton-sc-323bzc-0 jyjnth"
+            onBlur={[Function]}
+            onClick={[Function]}
+            onFocus={[Function]}
+            onMouseOut={[Function]}
+            onMouseOver={[Function]}
+            type="button"
+          >
+            Login
+          </button>
+        </div>
       </nav>
     </header>
     <main

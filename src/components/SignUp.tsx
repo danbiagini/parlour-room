@@ -161,7 +161,6 @@ export const SignUp: React.FC = () => {
           value={formUser}
           onChange={(nextValue) => setFormUser(nextValue)}
           onSubmit={submitRegForm}
-          onReset={() => setFormUser(currentUser)}
           validate="blur"
         >
           <FormFieldLabel

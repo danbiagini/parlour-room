@@ -7,7 +7,7 @@ import {
   useGoogleLogout,
 } from "react-google-login";
 import { useSelector, useDispatch } from "react-redux";
-import { useHistory } from "react-router-dom";
+import { useHistory, Redirect } from "react-router-dom";
 
 import * as config from "../common/client_config";
 import { RootState } from "../store/index";
@@ -52,6 +52,8 @@ export const Login: React.FC = () => {
       .then((response) => {
         if (response.code === 200) {
           console.log(`Success, logged in ${response.data.idpId}`);
+          dispatch(signinIdp(response.data, id_token));
+          return;
         } else if (response.code === 403) {
           console.log("403, user doesn't exist.");
         } else {
@@ -94,8 +96,13 @@ export const Login: React.FC = () => {
     signOut();
   };
   const goToSignup = () => history.push("/signup");
+
+  if (isSignedIn) {
+    return <Redirect to="/" />;
+  }
+
   let alert = undefined;
-  if (!isSignedIn && idpId) {
+  if (idpId) {
     alert = (
       <Layer
         position="center"
@@ -127,7 +134,7 @@ export const Login: React.FC = () => {
   return (
     <Box fill="vertical" justify="center" align="center" flex="shrink">
       {alert ? alert : <div />}
-      {isSignedIn || idpId ? (
+      {idpId ? (
         <Box alignContent="center" align="center">
           <Heading level={3}>Sign Out</Heading>
           <Box direction="row" pad="large" width="medium" justify="center">
