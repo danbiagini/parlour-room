@@ -24,4 +24,10 @@ describe("render the App in the DOM, and navigate", () => {
     fireEvent.click(getByText("Login"));
     expect(getByText("Sign In"));
   });
+
+  test("navigate to the signup page", () => {
+    const { getByText } = render(<App />);
+    fireEvent.click(getByText("Sign Up"));
+    expect(getByText("Get started by signing in with Google"));
+  });
 });

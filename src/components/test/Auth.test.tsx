@@ -1,3 +1,4 @@
+/* eslint-disable no-debugger */
 import * as actions from "../../store/actions";
 import * as types from "../../common/types";
 import {
@@ -7,15 +8,20 @@ import {
 } from "../../store/gameReducer";
 import { Login } from "../Login";
 import { SignUp } from "../SignUp";
-import { store } from "../../store/index";
+import Routes from "../Routes";
 import { testUser } from "../../db/test/helper";
 import React from "react";
-import { Provider } from "react-redux";
-import { MemoryRouter } from "react-router";
-import { render, fireEvent } from "@testing-library/react";
+import {
+  screen,
+  fireEvent,
+  waitForElementToBeRemoved,
+  waitFor,
+} from "@testing-library/dom";
+import { wrappedRender } from "./helper";
 import "@testing-library/jest-dom";
 import axios from "axios";
 import Auth from "../Auth";
+import { act } from "react-dom/test-utils";
 
 jest.mock("axios");
 const axiosMock = jest.fn();
@@ -32,6 +38,10 @@ afterAll(async () => {
 beforeEach(() => {
   axiosMock.mockClear();
 });
+
+// afterEach(() => {
+//   cleanup();
+// });
 
 const partialActAuthIdp: types.ActionAuthIdp = {
   type: types.ACTIONS.AUTH_IDP,
@@ -72,16 +82,9 @@ describe("User state reducers", () => {
 
 describe("Login with google", () => {
   it("should render a button", () => {
-    const { getByText } = render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <Login />
-        </MemoryRouter>
-      </Provider>
-    );
-    const button = getByText("Sign in with Google");
+    wrappedRender(<Login />);
+    const button = screen.getByRole("button", { name: "Sign in with Google" });
     expect(button).toBeTruthy();
-    fireEvent.click(button);
   });
 
   it("should return the User on success", async () => {
@@ -99,18 +102,67 @@ describe("Login with google", () => {
 });
 
 describe("Signup with google", () => {
-  it("should render a button", () => {
-    const { getByText } = render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <SignUp />
-        </MemoryRouter>
-      </Provider>
-    );
-    const button = getByText("Sign in with Google");
+  it("Sign in with google modal should be removed after login", async () => {
+    const { store } = wrappedRender(<SignUp />);
+    expect(
+      screen.getByText("Get started by signing in with Google")
+    ).toBeInTheDocument();
+
+    const button = screen.getByRole("button", { name: "Sign in with Google" });
     expect(button).toBeTruthy();
-    fireEvent.click(button);
+
+    act(() => {
+      store.dispatch(
+        actions.signinIdp(testUser, "testSignInWithGOogleIdToken")
+      );
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText("Get started by signing in with Google")
+    );
   });
+
+  it("should get success after edit and submit sign up form", async () => {
+    const { store } = wrappedRender(<Routes />, ["/signup"]);
+
+    act(() => {
+      store.dispatch(
+        actions.signinIdp(testUser, "testSignInWithGOogleIdToken")
+      );
+    });
+
+    const email_sub = screen.getByLabelText(
+      "Receive occassional email updates?"
+    );
+    expect(email_sub).not.toBeChecked();
+    expect(screen.getByDisplayValue("http://mypic.com/1234567"));
+    expect(screen.getByLabelText("First Name")).toHaveValue("Dan");
+    const last_input = screen.getByLabelText("Last Name");
+    expect(last_input).toHaveValue("Last");
+
+    fireEvent.change(last_input, { target: { value: "Bonjini" } });
+    expect(last_input).toHaveValue("Bonjini");
+    fireEvent.click(email_sub);
+    expect(email_sub).toBeChecked();
+
+    testUser.isSignedIn = true;
+    testUser.lastName = "Bonjini";
+    testUser.email_subscription = true;
+    testUser.username = testUser.email;
+    axiosMock.mockResolvedValueOnce({
+      data: testUser,
+      status: 200,
+    });
+
+    const submit = screen.getByRole("button", { name: "Submit" });
+    fireEvent.click(submit);
+    await waitFor(() => {
+      expect(
+        screen.getByText("Hello Dan, you're signed in")
+      ).toBeInTheDocument();
+    });
+  });
+
   it("should return the User on success", async () => {
     axiosMock.mockResolvedValueOnce({
       data: testUser,

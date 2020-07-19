@@ -41,7 +41,7 @@
    * <value>`
    */
   "pgSettings": {
-    // "search_path": "app_public,app_private,app_hidden,public",
+    "search_path": "parlour_public,parlour_private",
   },
 
   /*
@@ -85,8 +85,7 @@
    * afterReset: actions executed after a `graphile-migrate reset` command.
    */
   "afterReset": [
-    // "afterReset.sql",
-    // { "_": "command", "command": "graphile-worker --schema-only" },
+    { "_": "command", "command": "tools/dockerbuild/pg-init-scripts/roles.sh"}
   ],
  
   /*

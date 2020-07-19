@@ -35,7 +35,7 @@ export const DB_ANON_USER = process.env.DB_ANON_USER;
 export const DB_ROOT_USER = process.env.DB_POSTGRAHILE_USER;
 
 export const testUser: types.User = {
-  isSignedIn: true,
+  isSignedIn: false,
   idpId: "12345",
   idp: types.IDP.GOOGLE,
   lastName: "Last",

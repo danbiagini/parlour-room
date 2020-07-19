@@ -10,7 +10,7 @@ export const api = express.Router();
 api.use(express.json());
 
 api.get("/auth/:idp/login", async (req, res) => {
-  logger.silly(
+  logger.debug(
     `beginning /auth/:idp/login w/ query param: ${JSON.stringify(req.query)}`
   );
   if (req.params.idp != "google.com") {
@@ -43,7 +43,7 @@ api.get("/auth/:idp/login", async (req, res) => {
 });
 
 api.post("/auth/:idp/register", async (req, res) => {
-  logger.silly(
+  logger.debug(
     `beginning /auth/:idp/register w/ query param: ${JSON.stringify(req.query)}`
   );
   if (req.params.idp != "google.com") {

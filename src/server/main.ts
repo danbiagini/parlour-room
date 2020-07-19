@@ -31,7 +31,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
 
 server.on("upgrade", (req, socket, head) => {
-  logger.silly("Got an upgrade request");
+  logger.debug("Got an upgrade request");
   const pathName = req.url;
   if (pathName === "/socket") {
     wss.handleUpgrade(req, socket, head, (ws) => {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Heading,
@@ -26,27 +26,34 @@ import GoogleLogin, { GoogleLoginResponse } from "react-google-login";
 import { User, IDP } from "../common/types";
 import { signinIdp } from "../store/actions";
 import Auth from "./Auth";
+import { clientLogger } from "../common/clientLogger";
 
 export const SignUp: React.FC = () => {
   const isSignedIn = useSelector((state: RootState) => state.user.isSignedIn);
   const currentUser = useSelector((state: RootState) => state.user);
   const idpToken = useSelector((state: RootState) => state.idp_token);
   const [goHome, setGoHome] = useState(false);
-  const [formUser, setFormUser] = useState(currentUser);
+  const [formUser, setFormUser] = useState(Object.assign({}, currentUser));
   const [editAvatar, setEditAvatar] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const showHelp = false; // TODO add a button or something
-  const auth = new Auth();
   const dispatch = useDispatch();
+  const auth = new Auth();
 
-  const idpId = formUser.idpId;
+  const idpId = currentUser.idpId;
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      setFormUser(Object.assign({}, currentUser));
+    }
+  }, [currentUser, isSignedIn]);
 
   const handleGoHome = () => {
     setGoHome(true);
   };
 
   const failedGoogle = (error: any) => {
-    console.log(`failGoogle: ${JSON.stringify(error)}`);
+    clientLogger.log("ERROR", `failGoogle: ${JSON.stringify(error)}`);
   };
 
   const responseSuccessGoogle = (response: GoogleLoginResponse) => {
@@ -55,7 +62,7 @@ export const SignUp: React.FC = () => {
     const email = response.profileObj.email;
     const name = response.profileObj.givenName;
     const last = response.profileObj.familyName;
-    // console.log(
+    // clientLogger.log("DEBUG",
     //   `${JSON.stringify(response)} hi ${email}, with token ${id_token}`
     // );
 
@@ -70,7 +77,6 @@ export const SignUp: React.FC = () => {
       lastName: last,
     };
 
-    setFormUser(newUser);
     dispatch(signinIdp(newUser, id_token));
   };
 
@@ -79,23 +85,22 @@ export const SignUp: React.FC = () => {
   };
 
   const submitRegForm = (event: any) => {
-    console.log("submitted: " + JSON.stringify(event.value, null, "\t"));
+    clientLogger.debug("submitted: " + JSON.stringify(event.value, null, "\t"));
     const newUser: User = event.value;
     newUser.username = newUser.email;
-    console.log("new user: " + JSON.stringify(newUser));
     setIsLoading(true);
 
     auth
       .serverReg(newUser, idpToken)
       .then((response) => {
-        console.log("server response: " + JSON.stringify(response));
+        clientLogger.debug("server response: " + JSON.stringify(response));
         setIsLoading(false);
         const authUser: User = Object.assign({}, response.data);
         dispatch(signinIdp(authUser, idpToken));
         setGoHome(true);
       })
       .catch((err) => {
-        console.log("Error registering new user:" + err);
+        clientLogger.log("ERROR", "Error registering new user:" + err);
       });
   };
 
@@ -106,6 +111,9 @@ export const SignUp: React.FC = () => {
   if (goHome) {
     return <Redirect to="/" />;
   }
+  clientLogger.debug(
+    "SignIn component executing, " + JSON.stringify(currentUser)
+  );
 
   if (isSignedIn) {
     return (
@@ -208,12 +216,14 @@ export const SignUp: React.FC = () => {
                 </Box>
               </Box>
             }
+            htmlFor="profPicUrl_input"
             name="profPicUrl"
             disabled={!editAvatar}
           >
             <TextInput
               disabled={!editAvatar}
               name="profPicUrl"
+              id="profPicUrl_input"
               placeholder="https://google.com/my-pic.jpg"
             />
           </FormField>

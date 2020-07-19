@@ -22,6 +22,8 @@ export const FormFieldLabel: React.FC<FormFieldLabelProps> = (
           label
         )
       }
+      htmlFor={props.name + "_input"}
+      id={props.name + "_input"}
       required={required}
       {...rest}
     />

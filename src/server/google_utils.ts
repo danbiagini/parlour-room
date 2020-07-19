@@ -31,7 +31,7 @@ const validateGoogleToken = async (token: string) => {
     })
     .then(async (ticket) => {
       const payload = await ticket.getPayload();
-      logger.silly("ticket payload: " + JSON.stringify(payload));
+      logger.debug("ticket payload: " + JSON.stringify(payload));
       authUser.idpId = payload["sub"];
       if (
         payload["iss"] != "accounts.google.com" &&
@@ -100,7 +100,7 @@ const loginWithGoogleIdToken = async (token: string) => {
     })
     .catch((error) => {
       if (error == "error: idp_id not found") {
-        logger.silly(`user not found: ${error}`);
+        logger.debug(`user not found: ${error}`);
       } else {
         logger.error(`Sql login_user function returned: ${error}`);
       }
