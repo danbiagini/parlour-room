@@ -1,3 +1,4 @@
+/* eslint-disable no-debugger */
 import { app } from "../main";
 import { cleanPools } from "../parlour_db";
 import {
@@ -67,6 +68,20 @@ describe("Auth login API", () => {
     expect(res.body).toEqual("no auth code present");
   });
 
+  it("returns 401 on mal-formatted auth hdrs", async () => {
+    let res = await request(app)
+      .get("/api/auth/google.com/login")
+      .set("Authorization", "non-sense");
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual("no auth code present");
+
+    res = await request(app)
+      .get("/api/auth/google.com/login")
+      .set("Authorization", "non sense");
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual("no auth code present");
+  });
+
   it("returns 401 on garbage token", async () => {
     mockedVerifyIdToken.mockRejectedValueOnce(
       Error("Wrong number of segments in token")
@@ -119,6 +134,23 @@ describe("Auth login API", () => {
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
     expect(mockedGetPayload.mock.calls).toHaveLength(1);
   });
+
+  it("returns 200 on valid user with Authorization hdr", async () => {
+    const signedInUser = testCreatedUsers[0];
+    signedInUser.isSignedIn = true;
+    validToken["sub"] = signedInUser.idpId;
+    mockedGetPayload.mockReturnValueOnce(validToken);
+    const myTicket: LoginTicket = new LoginTicket();
+    mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
+    const res = await await request(app)
+      .get("/api/auth/google.com/login")
+      .set("Authorization", "Bearer mocksAsValid");
+    expect(res.status).toBe(200);
+
+    expect(res.body).toMatchObject(signedInUser);
+    expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
+    expect(mockedGetPayload.mock.calls).toHaveLength(1);
+  });
 });
 
 describe("Auth register API", () => {
@@ -142,6 +174,22 @@ describe("Auth register API", () => {
 
   it("returns 401 when no token received", async () => {
     const res = await request(app).post("/api/auth/google.com/register");
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual("no auth code present");
+  });
+
+  it("returns 401 on mal-formatted auth hdr 'non-sense'", async () => {
+    const res = await request(app)
+      .post("/api/auth/google.com/register")
+      .set("Authorization", "non-sense");
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual("no auth code present");
+  });
+
+  it("returns 401 on mal-formatted auth hdr 'non sense'", async () => {
+    const res = await request(app)
+      .post("/api/auth/google.com/register")
+      .set("Authorization", "non sense");
     expect(res.status).toBe(401);
     expect(res.body).toEqual("no auth code present");
   });

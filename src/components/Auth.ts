@@ -23,7 +23,8 @@ export default class Auth {
       `/api/auth/${user.idp}/register`,
       user,
       {
-        params: { code: id_token },
+        // params: { code: id_token },
+        headers: { Authorization: `Bearer ${id_token}` },
         validateStatus: (status) => {
           return status < 500;
         },
@@ -41,7 +42,8 @@ export default class Auth {
     const axRes = await this._apiClient.get<User>(
       "/api/auth/google.com/login",
       {
-        params: { code: id_token },
+        // params: { code: id_token },
+        headers: { Authorization: `Bearer ${id_token}` },
         validateStatus: (status) => {
           return status < 500;
         },

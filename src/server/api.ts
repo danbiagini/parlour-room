@@ -6,8 +6,39 @@ import {
 } from "./google_utils";
 import { User } from "../common/types";
 
+declare global {
+  namespace Express {
+    interface Request {
+      id_token?: string;
+    }
+  }
+}
 export const api = express.Router();
 api.use(express.json());
+
+const getIdTokenFromRequest = (
+  req: express.Request,
+  res: express.Response,
+  next: Function
+) => {
+  if (req.header("Authorization")) {
+    let auth_hdr = req.header("Authorization").split(" ");
+    if (auth_hdr.length === 2 && auth_hdr[0] === "Bearer") {
+      req.id_token = auth_hdr[1];
+      next();
+      return;
+    }
+  }
+
+  if (!req.id_token && req.query.code) {
+    req.id_token = req.query.code as string;
+    next();
+    return;
+  }
+  next();
+};
+
+api.use(getIdTokenFromRequest);
 
 api.get("/auth/:idp/login", async (req, res) => {
   logger.debug(
@@ -16,11 +47,15 @@ api.get("/auth/:idp/login", async (req, res) => {
   if (req.params.idp != "google.com") {
     return res.status(400).json("Unsupported IDP").send();
   }
-  if (!req.query.code) {
+
+  let id_token: string = req.id_token;
+
+  if (!id_token) {
     logger.info("no code on auth/google request:" + JSON.stringify(req.params));
     return res.status(401).json("no auth code present");
   }
-  await loginWithGoogleIdToken(req.query.code.toString())
+
+  await loginWithGoogleIdToken(id_token)
     .then((user) => {
       if (user.email) {
         logger.info("got the email ${user.email}, lets render!");
@@ -50,7 +85,7 @@ api.post("/auth/:idp/register", async (req, res) => {
     return res.status(400).json("Unsupported IDP").send();
   }
 
-  if (!req.query.code) {
+  if (!req.id_token) {
     logger.info("no code on auth/google request:" + JSON.stringify(req.params));
     return res.status(401).json("no auth code present");
   }
@@ -64,7 +99,7 @@ api.post("/auth/:idp/register", async (req, res) => {
   }
 
   const postUser: User = req.body;
-  await registerWithGoogleIdToken(req.query.code.toString(), postUser)
+  await registerWithGoogleIdToken(req.id_token, postUser)
     .then((user) => {
       logger.debug("created new user: " + JSON.stringify(user));
       user.isSignedIn = true;
