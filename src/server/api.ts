@@ -40,40 +40,55 @@ const getIdTokenFromRequest = (
 
 api.use(getIdTokenFromRequest);
 
+const errorResponse = (
+  res: express.Response,
+  code: number,
+  message: string
+) => {
+  return res.status(code).json({ message: message }).send();
+};
+
 api.get("/auth/:idp/login", async (req, res) => {
   logger.debug(
     `beginning /auth/:idp/login w/ query param: ${JSON.stringify(req.query)}`
   );
-  if (req.params.idp != "google.com") {
-    return res.status(400).json("Unsupported IDP").send();
+  if (!req.params.idp || req.params.idp != "google.com") {
+    return errorResponse(res, 400, "Unsupported IDP");
   }
 
   let id_token: string = req.id_token;
 
   if (!id_token) {
     logger.info("no code on auth/google request:" + JSON.stringify(req.params));
-    return res.status(401).json("no auth code present");
+    return errorResponse(res, 401, "no auth code present");
   }
 
   await loginWithGoogleIdToken(id_token)
     .then((user) => {
       if (user.email) {
-        logger.info("got the email ${user.email}, lets render!");
+        logger.silly("got the email ${user.email}, lets render!");
       }
 
       if (user.lastName || user.firstName) {
-        logger.info("got the full name: ${user.firstName} ${user.lastName}");
+        logger.silly("got the full name: ${user.firstName} ${user.lastName}");
       }
+
+      if (req.sessionID) {
+        logger.debug("login request already had a sessionID");
+      }
+      req.session.user_id = user.uid;
       return res.json(user);
     })
     .catch((err) => {
       logger.debug(`token invalid, err: ${err}`);
       if (err == "Error: Token used too late,") {
-        return res.status(401).json("Token expired").send();
+        return errorResponse(res, 401, "Token expired");
+        // return res.status(401).json("Token expired").send();
       } else if (err == "error: idp_id not found") {
-        return res.status(403).json("User not found").send();
+        return errorResponse(res, 403, "User not found");
+        // return res.status(403).json("User not found").send();
       }
-      return res.status(401).json("code invalid").send();
+      return errorResponse(res, 401, "code invalid");
     });
 });
 
@@ -82,20 +97,22 @@ api.post("/auth/:idp/register", async (req, res) => {
     `beginning /auth/:idp/register w/ query param: ${JSON.stringify(req.query)}`
   );
   if (req.params.idp != "google.com") {
-    return res.status(400).json("Unsupported IDP").send();
+    return errorResponse(res, 400, "Unsupported IDP");
   }
 
   if (!req.id_token) {
     logger.info("no code on auth/google request:" + JSON.stringify(req.params));
-    return res.status(401).json("no auth code present");
+    return errorResponse(res, 401, "no auth code present");
+    // return res.status(401).json("no auth code present");
   }
 
   if (!req.accepts("application/json")) {
-    return res.status(406).send();
+    return errorResponse(res, 406, "Invalid accepted content type");
   }
 
   if (!req.is("json")) {
-    return res.status(415).send();
+    return errorResponse(res, 415, "Invalid content type");
+    // return res.status(415).send();
   }
 
   const postUser: User = req.body;
@@ -103,23 +120,24 @@ api.post("/auth/:idp/register", async (req, res) => {
     .then((user) => {
       logger.debug("created new user: " + JSON.stringify(user));
       user.isSignedIn = true;
+      req.session.user_id = user.uid;
       return res.json(user);
     })
     .catch((err) => {
       logger.debug(`token invalid, err: ${err}`);
       if (err == "Error: Token used too late,") {
-        return res.status(401).json("Token expired").send();
+        return errorResponse(res, 401, "Token expired");
       } else if (
         err ==
         'error: duplicate key value violates unique constraint "user_username_key"'
       ) {
-        return res.status(409).json("User already exists").send();
+        return errorResponse(res, 409, "User already exists");
       } else if (
         err == "Error: email not verified" ||
         err == "Error: user email doesn't match token"
       ) {
-        return res.status(409).json(err.toString());
+        return errorResponse(res, 409, err.toString());
       }
-      return res.status(401).json("code invalid").send();
+      return errorResponse(res, 401, "code invalid");
     });
 });

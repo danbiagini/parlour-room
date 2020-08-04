@@ -51,46 +51,54 @@ const validToken: TokenPayload = {
 };
 
 describe("Auth login API", () => {
-  it("returns 404 when no idp provided", async () => {
-    const res = await request(app).get("/api/auth/login");
-    expect(res.status).toBe(404);
+  it("returns 404 when no idp provided", (done) => {
+    request(app)
+      .get("/api/auth/login")
+      .set("Accept", "application/json")
+      .expect(404, done);
   });
 
-  it("returns 400 when unsupported idp provided", async () => {
-    const res = await request(app).get("/api/auth/coolauth.com/login");
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual("Unsupported IDP");
+  it("returns 400 when unsupported idp provided", (done) => {
+    request(app)
+      .get("/api/auth/coolauth.com/login")
+      .set("Accept", "application/json")
+      .expect("Content-Type", "application/json; charset=utf-8")
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      })
+      .expect(400, { message: "Unsupported IDP" }, done);
   });
 
-  it("returns 401 when no token received", async () => {
-    const res = await request(app).get("/api/auth/google.com/login");
-    expect(res.status).toBe(401);
-    expect(res.body).toEqual("no auth code present");
-  });
-
-  it("returns 401 on mal-formatted auth hdrs", async () => {
-    let res = await request(app)
+  it("returns 401 when no token received", (done) => {
+    request(app)
       .get("/api/auth/google.com/login")
-      .set("Authorization", "non-sense");
-    expect(res.status).toBe(401);
-    expect(res.body).toEqual("no auth code present");
+      .expect("Content-Type", "application/json; charset=utf-8")
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      })
+      .expect(401, { message: "no auth code present" }, done);
+  });
 
-    res = await request(app)
+  it("returns 401 on mal-formatted auth hdrs", (done) => {
+    request(app)
       .get("/api/auth/google.com/login")
-      .set("Authorization", "non sense");
-    expect(res.status).toBe(401);
-    expect(res.body).toEqual("no auth code present");
+      .set("Authorization", "non-sense")
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      })
+      .expect(401, { message: "no auth code present" }, done);
   });
 
   it("returns 401 on garbage token", async () => {
     mockedVerifyIdToken.mockRejectedValueOnce(
       Error("Wrong number of segments in token")
     );
-    const res = await request(app).get(
-      "/api/auth/google.com/login?code=12345679"
-    );
-    expect(res.status).toBe(401);
-    expect(res.body).toEqual("code invalid");
+    await request(app)
+      .get("/api/auth/google.com/login?code=12345679")
+      .expect(401, { message: "code invalid" })
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      });
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
   });
 
@@ -100,7 +108,8 @@ describe("Auth login API", () => {
       "/api/auth/google.com/login?code=thisTokenIsSooooOld"
     );
     expect(res.status).toBe(401);
-    expect(res.body).toEqual("Token expired");
+    expect(res.body).toEqual({ message: "Token expired" });
+    expect(res.header).not.toHaveProperty("set-cookie");
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
   });
 
@@ -113,7 +122,8 @@ describe("Auth login API", () => {
       "/api/auth/google.com/login?code=mocksAsValid"
     );
     expect(res.status).toBe(403);
-    expect(res.body).toEqual("User not found");
+    expect(res.body).toEqual({ message: "User not found" });
+    expect(res.header).not.toHaveProperty("set-cookie");
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
     expect(mockedGetPayload.mock.calls).toHaveLength(1);
   });
@@ -125,12 +135,14 @@ describe("Auth login API", () => {
     mockedGetPayload.mockReturnValueOnce(validToken);
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
-    const res = await request(app).get(
-      "/api/auth/google.com/login?code=mocksAsValid"
-    );
-    expect(res.status).toBe(200);
 
-    expect(res.body).toMatchObject(signedInUser);
+    await request(app)
+      .get("/api/auth/google.com/login?code=mocksAsValid")
+      .expect(200, signedInUser)
+      .expect(
+        "set-cookie",
+        /parlourSession=.*; Path=\/; Expires=.*; HttpOnly; SameSite=Strict/
+      );
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
     expect(mockedGetPayload.mock.calls).toHaveLength(1);
   });
@@ -142,12 +154,14 @@ describe("Auth login API", () => {
     mockedGetPayload.mockReturnValueOnce(validToken);
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
-    const res = await await request(app)
+    await request(app)
       .get("/api/auth/google.com/login")
-      .set("Authorization", "Bearer mocksAsValid");
-    expect(res.status).toBe(200);
-
-    expect(res.body).toMatchObject(signedInUser);
+      .set("Authorization", "Bearer mocksAsValid")
+      .expect(200, signedInUser)
+      .expect(
+        "set-cookie",
+        /parlourSession=.*; Path=\/; Expires=.*; HttpOnly; SameSite=Strict/
+      );
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
     expect(mockedGetPayload.mock.calls).toHaveLength(1);
   });
@@ -160,49 +174,63 @@ describe("Auth register API", () => {
   });
 
   it("returns 404 on unsupported method GET", async () => {
-    const res = await request(app).get(
-      "/api/auth/google.com/regisger?code=123456"
-    );
-    expect(res.status).toBe(404);
+    await request(app)
+      .get("/api/auth/google.com/regisger?code=123456")
+      .expect(404)
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      });
   });
 
   it("returns 400 when unsupported idp provided", async () => {
-    const res = await request(app).post("/api/auth/coolauth.com/register");
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual("Unsupported IDP");
+    await request(app)
+      .post("/api/auth/coolauth.com/register")
+      .expect(400, { message: "Unsupported IDP" })
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      });
   });
 
   it("returns 401 when no token received", async () => {
-    const res = await request(app).post("/api/auth/google.com/register");
-    expect(res.status).toBe(401);
-    expect(res.body).toEqual("no auth code present");
+    await request(app)
+      .post("/api/auth/google.com/register")
+      .expect(401, { message: "no auth code present" })
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      });
   });
 
   it("returns 401 on mal-formatted auth hdr 'non-sense'", async () => {
-    const res = await request(app)
+    await request(app)
       .post("/api/auth/google.com/register")
-      .set("Authorization", "non-sense");
-    expect(res.status).toBe(401);
-    expect(res.body).toEqual("no auth code present");
+      .set("Authorization", "non-sense")
+      .expect(401, { message: "no auth code present" })
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      });
   });
 
   it("returns 401 on mal-formatted auth hdr 'non sense'", async () => {
-    const res = await request(app)
+    await request(app)
       .post("/api/auth/google.com/register")
-      .set("Authorization", "non sense");
-    expect(res.status).toBe(401);
-    expect(res.body).toEqual("no auth code present");
+      .set("Authorization", "non sense")
+      .expect(401, { message: "no auth code present" })
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      });
   });
 
   it("returns 401 on garbage token", async () => {
     mockedVerifyIdToken.mockRejectedValueOnce(
       Error("Wrong number of segments in token")
     );
-    const res = await request(app)
+    await request(app)
       .post("/api/auth/google.com/register?code=12345679")
-      .type("application/json");
-    expect(res.status).toBe(401);
-    expect(res.body).toEqual("code invalid");
+      .type("application/json")
+      .expect(401, { message: "code invalid" })
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      });
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
   });
 
@@ -213,13 +241,16 @@ describe("Auth register API", () => {
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
 
-    const res = await request(app)
+    await request(app)
       .post("/api/auth/google.com/register?code=mocksAsEmailNotVerified")
       .send(testUser)
-      .type("application/json");
-    expect(res.status).toBe(409);
-    expect(res.type).toBe("application/json");
-    expect(res.body).toEqual("Error: email not verified");
+      .type("application/json")
+      .expect(409, { message: "Error: email not verified" })
+      .expect("Content-Type", "application/json; charset=utf-8")
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      });
+
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
   });
 
@@ -230,30 +261,39 @@ describe("Auth register API", () => {
 
     const diffEmail = Object.assign({}, testUser);
     diffEmail.email = "notTheSameEmail@this.fails.com";
-    const res = await request(app)
+    await request(app)
       .post("/api/auth/google.com/register?code=mocksAsEmailNotVerified")
       .send(diffEmail)
-      .type("application/json");
-    expect(res.status).toBe(409);
-    expect(res.type).toBe("application/json");
-    expect(res.body).toEqual("Error: user email doesn't match token");
+      .type("application/json")
+      .expect(409, {
+        message: "Error: user email doesn't match token",
+      })
+      .expect("Content-Type", "application/json; charset=utf-8")
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      });
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
   });
 
   it("returns 415 on post with no json Content-Type ", async () => {
-    const res = await request(app).post(
-      "/api/auth/google.com/register?code=12345679"
-    );
-    expect(res.status).toBe(415);
+    await request(app)
+      .post("/api/auth/google.com/register?code=12345679")
+      .expect(415, { message: "Invalid content type" })
+      .expect("Content-Type", "application/json; charset=utf-8")
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      });
   });
 
   it("returns 401 on expired token", async () => {
     mockedVerifyIdToken.mockRejectedValueOnce(Error("Token used too late,"));
-    const res = await request(app)
+    await request(app)
       .post("/api/auth/google.com/register?code=this.TokenIs.SooooOld")
-      .type("application/json");
-    expect(res.status).toBe(401);
-    expect(res.body).toEqual("Token expired");
+      .type("application/json")
+      .expect(401, { message: "Token expired" })
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      });
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
   });
 
@@ -266,11 +306,15 @@ describe("Auth register API", () => {
     mockedGetPayload.mockReturnValueOnce(dup);
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
-    const res = await request(app)
+
+    await request(app)
       .post("/api/auth/google.com/register?code=mocksAsValid")
       .send(signedInUser)
-      .type("application/json");
-    expect(res.status).toBe(409);
+      .type("application/json")
+      .expect(409, { message: "User already exists" })
+      .expect((res) => {
+        expect(res.header).not.toHaveProperty("set-cookie");
+      });
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
   });
 
@@ -279,14 +323,20 @@ describe("Auth register API", () => {
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
 
-    const res = await request(app)
+    await request(app)
       .post("/api/auth/google.com/register?code=mocksAsValid")
       .send(testUser)
-      .type("application/json");
-    expect(res.status).toBe(200);
-    expect(res.type).toBe("application/json");
-    testUser.isSignedIn = true;
-    expect(res.body).toMatchObject(testUser);
+      .type("application/json")
+      .expect("Content-Type", "application/json; charset=utf-8")
+      .expect((res) => {
+        testUser.isSignedIn = true;
+        expect(res.status).toBe(200);
+        expect(res.body).toMatchObject(testUser);
+      })
+      .expect(
+        "set-cookie",
+        /parlourSession=.*; Path=\/; Expires=.*; HttpOnly; SameSite=Strict/
+      );
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
   });
 });

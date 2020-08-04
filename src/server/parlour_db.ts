@@ -8,7 +8,11 @@ if (process.env.NODE_ENV === "test") {
   PARLOUR_DB = process.env.TEST_DATABASE_URL;
   logger.info(`using test database: ${PARLOUR_DB}`);
 } else if (process.env.NODE_ENV === "development") {
-  logger.info(`parlour_db: ${PARLOUR_DB}`);
+  const obfUrl = PARLOUR_DB.replace(
+    "/(postgres:\\/\\/\\w+:).*(@.*)/",
+    "$1<pass>$2"
+  );
+  logger.info(`parlour_db: ${obfUrl}`);
 }
 
 const pools = {} as {

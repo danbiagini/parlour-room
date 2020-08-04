@@ -3,8 +3,14 @@ import path from "path";
 import { logger } from "../common/logger";
 import WebSocket from "ws";
 import http from "http";
+import dotenv from "dotenv";
+import dotenvexpand from "dotenv-expand";
+
+dotenvexpand(dotenv.config());
 
 import { api } from "./api";
+import { graphql } from "./graphql";
+import { sessions } from "./sessions";
 
 let port = 8080;
 if (process.env.PORT) {
@@ -24,7 +30,9 @@ app.get(["/", "/index.html"], function (req, res) {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
+app.use(sessions);
 app.use("/api", api);
+app.use("/graphql", graphql);
 
 // start the express server
 const server = http.createServer(app);
