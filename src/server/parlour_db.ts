@@ -3,16 +3,18 @@ import { logger } from "../common/logger";
 import { User, IDP } from "../common/types";
 
 let PARLOUR_DB = process.env.POSTGRAPHILE_URL;
+const PARLOUR_ROOT_URL = process.env.PARLOUR_ROOT_URL;
+
+const obfuscateDbUrl = (url: string) => {
+  return url.replace(/(postgres:\/\/[\w-]+:).*(@.*)/, "$1<password>$2");
+};
 
 if (process.env.NODE_ENV === "test") {
   PARLOUR_DB = process.env.TEST_DATABASE_URL;
   logger.info(`using test database: ${PARLOUR_DB}`);
-} else if (process.env.NODE_ENV === "development") {
-  const obfUrl = PARLOUR_DB.replace(
-    "/(postgres:\\/\\/\\w+:).*(@.*)/",
-    "$1<pass>$2"
-  );
-  logger.info(`parlour_db: ${obfUrl}`);
+} else {
+  logger.info(`parlour_db: ${obfuscateDbUrl(PARLOUR_DB)}`);
+  logger.info(`parlour root db: ${obfuscateDbUrl(PARLOUR_ROOT_URL)}`);
 }
 
 const pools = {} as {
@@ -53,7 +55,7 @@ export const poolFromUrl = (url: string, role?: string) => {
     p.on("error", (err, client) => {
       logger.error(`DB client ${client}  emitted error ${err}`);
     });
-    logger.debug(`created pool: ${key}`);
+    logger.debug(`created pool: ${obfuscateDbUrl(key)}`);
     pools[key] = p;
   }
   return pools[key];
@@ -61,6 +63,10 @@ export const poolFromUrl = (url: string, role?: string) => {
 
 export const getParlourDbPool = (role?: string) => {
   return poolFromUrl(PARLOUR_DB, role);
+};
+
+export const getParlourRootDbPool = () => {
+  return poolFromUrl(PARLOUR_ROOT_URL);
 };
 
 export const loginUser = async (idp: IDP, idp_id: string) => {

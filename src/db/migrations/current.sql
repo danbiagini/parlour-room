@@ -175,3 +175,14 @@ $$ language plpgsql stable security definer;
 
 grant execute on function parlour_private.login_user(parlour_private.account.idp_id%TYPE, parlour_public.identityProvider) to parlour_postgraphile;
 comment on function parlour_private.login_user(parlour_private.account.idp_id%TYPE, parlour_public.identityProvider) is 'Login a user based on idp identity.  REQUIRES the identity was already verified!';
+
+drop table if exists parlour_private.login_session cascade;
+create table parlour_private.login_session (
+  sid varchar primary key NOT NULL,
+  sess json NOT NULL,
+	created_at timestamp not null  default now(),
+	updated_at timestamp not null default now(),
+  expire timestamp NOT NULL
+);
+create index ON parlour_private.login_session(expire);
+grant all on table parlour_private.login_session to parlour_root;

@@ -45,6 +45,8 @@ if (process.env.NODE_ENV !== "production") {
     // },
   };
   if (process.env.NODE_ENV === "test") {
+    graphqlDevOptions.graphiql = false;
+    graphqlDevOptions.exportGqlSchemaPath = undefined;
     graphqlDevOptions.watchPg = false;
   }
   Object.assign(graphqlOptions, graphqlDevOptions);

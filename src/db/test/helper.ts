@@ -53,6 +53,7 @@ export const cleanTestDb = async () => {
     await p.query("delete from parlour_public.user");
     await p.query("delete from parlour_public.parlour");
     await p.query("delete from parlour_private.account");
+    await p.query("delete from parlour_private.login_session");
   } catch (e) {
     console.error("cleanTestDb had error:" + e);
   }
@@ -120,4 +121,44 @@ export const createUsers = async (
     logger.debug("createdUsers results: " + res.rows.length);
   });
   client.release();
+};
+
+// best intentions, turns out this isn't really that usable
+export const createSession = async (user: types.User): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const exp = new Date(Date.now() + 10000);
+    poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER)
+      .connect()
+      .then((client) => {
+        client
+          .query(
+            "insert into parlour_private.login_session(sid, sess, expire) values (parlour_public.gen_random_uuid(), $1, $2) returning sid",
+            [
+              `{"cookie": "testCookie", "user_id": "${user.uid}"}`,
+              exp.toISOString(),
+            ]
+          )
+          .then((res) => {
+            logger.debug(
+              "createSession results: " +
+                res.rows.length +
+                " sid: " +
+                res.rows[0].sid
+            );
+            const sid: string = res.rows[0].sid;
+            resolve(sid);
+          })
+          .catch((err) => {
+            logger.error("error creating session:", err);
+          })
+          .finally(() => {
+            console.log("don't worry, releasing the client...");
+            client.release();
+          });
+      })
+      .catch((err) => {
+        logger.error("couldn't get pool connection, err:" + err);
+        reject(err);
+      });
+  });
 };

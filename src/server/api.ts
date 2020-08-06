@@ -48,6 +48,24 @@ const errorResponse = (
   return res.status(code).json({ message: message }).send();
 };
 
+api.get("/auth/logout", async (req, res) => {
+  if (!req.header("cookie")) {
+    logger.debug("couldn't find a session cookie to logout");
+    return res.status(403).send();
+  }
+
+  logger.silly(
+    "found session cookie in logout:" +
+      req.header("cookie") +
+      ", session:" +
+      req.session.id
+  );
+  req.session.destroy((err) => {
+    if (err) logger.error("couldn't destroy session:", err);
+  });
+  return res.status(200).send();
+});
+
 api.get("/auth/:idp/login", async (req, res) => {
   logger.debug(
     `beginning /auth/:idp/login w/ query param: ${JSON.stringify(req.query)}`
@@ -73,9 +91,6 @@ api.get("/auth/:idp/login", async (req, res) => {
         logger.silly("got the full name: ${user.firstName} ${user.lastName}");
       }
 
-      if (req.sessionID) {
-        logger.debug("login request already had a sessionID");
-      }
       req.session.user_id = user.uid;
       return res.json(user);
     })
@@ -83,10 +98,8 @@ api.get("/auth/:idp/login", async (req, res) => {
       logger.debug(`token invalid, err: ${err}`);
       if (err == "Error: Token used too late,") {
         return errorResponse(res, 401, "Token expired");
-        // return res.status(401).json("Token expired").send();
       } else if (err == "error: idp_id not found") {
         return errorResponse(res, 403, "User not found");
-        // return res.status(403).json("User not found").send();
       }
       return errorResponse(res, 401, "code invalid");
     });
@@ -103,7 +116,6 @@ api.post("/auth/:idp/register", async (req, res) => {
   if (!req.id_token) {
     logger.info("no code on auth/google request:" + JSON.stringify(req.params));
     return errorResponse(res, 401, "no auth code present");
-    // return res.status(401).json("no auth code present");
   }
 
   if (!req.accepts("application/json")) {
@@ -112,7 +124,6 @@ api.post("/auth/:idp/register", async (req, res) => {
 
   if (!req.is("json")) {
     return errorResponse(res, 415, "Invalid content type");
-    // return res.status(415).send();
   }
 
   const postUser: User = req.body;

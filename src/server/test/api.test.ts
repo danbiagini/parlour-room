@@ -2,17 +2,35 @@
 import { app } from "../main";
 import { cleanPools } from "../parlour_db";
 import {
+  ParlourSession,
+  findSession,
+  MAXIMUM_SESSION_DURATION_IN_MILLISECONDS,
+  nullSession,
+} from "../sessions";
+import {
   createUsers,
   deleteTestData,
   testUser,
   testCreatedUsers,
   cleanTestDb,
 } from "../../db/test/helper";
-import { agent as request } from "supertest";
-import { OAuth2Client, LoginTicket, TokenPayload } from "google-auth-library";
 
-const mockedVerifyIdToken = jest.fn();
-const mockedGetPayload = jest.fn();
+import {
+  mockedVerifyIdToken,
+  mockedGetPayload,
+  validToken,
+  login,
+  cookieJar,
+} from "./api_helper";
+import { agent as request } from "supertest";
+import { OAuth2Client, LoginTicket } from "google-auth-library";
+import * as cookie from "cookie";
+import cookieParser from "cookie-parser";
+
+// const mockedVerifyIdToken = jest.fn();
+// const mockedGetPayload = jest.fn();
+
+const testUserToken = validToken(testUser);
 
 beforeAll(async () => {
   jest
@@ -37,18 +55,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  validToken.sub = testUser.idpId;
+  // validToken.sub = testUser.idpId;
 });
-
-const validToken: TokenPayload = {
-  sub: testUser.idpId,
-  iss: "accounts.google.com",
-  aud: "",
-  exp: Date.now() + 600,
-  iat: Date.now() - 600,
-  email_verified: true,
-  email: testUser.email,
-};
 
 describe("Auth login API", () => {
   it("returns 404 when no idp provided", (done) => {
@@ -114,7 +122,7 @@ describe("Auth login API", () => {
   });
 
   it("returns 403 on missing user", async () => {
-    mockedGetPayload.mockReturnValueOnce(validToken);
+    mockedGetPayload.mockReturnValueOnce(testUserToken);
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
 
@@ -131,29 +139,50 @@ describe("Auth login API", () => {
   it("returns 200 on valid user", async () => {
     const signedInUser = testCreatedUsers[0];
     signedInUser.isSignedIn = true;
-    validToken["sub"] = signedInUser.idpId;
-    mockedGetPayload.mockReturnValueOnce(validToken);
+    mockedGetPayload.mockReturnValueOnce(validToken(signedInUser));
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
 
+    let sid: string = undefined;
     await request(app)
       .get("/api/auth/google.com/login?code=mocksAsValid")
       .expect(200, signedInUser)
       .expect(
         "set-cookie",
         /parlourSession=.*; Path=\/; Expires=.*; HttpOnly; SameSite=Strict/
-      );
+      )
+      .expect((res) => {
+        sid =
+          cookieParser.signedCookie(
+            cookie.parse(res.header["set-cookie"][0]).parlourSession,
+            process.env.SESSION_SECRET
+          ) || "not found";
+      });
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
     expect(mockedGetPayload.mock.calls).toHaveLength(1);
+
+    const s: ParlourSession = await findSession(sid);
+    const expires = new Date(s.expires);
+    const target = new Date(
+      Date.now() + MAXIMUM_SESSION_DURATION_IN_MILLISECONDS
+    );
+    expect(expires.valueOf()).toBeWithin(
+      target.valueOf() - 1000,
+      target.valueOf() + 1000
+    );
+    expect(expires.valueOf()).toBeGreaterThanOrEqual(target.valueOf());
+    expect(s.sess.user_id).toEqual(signedInUser.uid);
   });
 
   it("returns 200 on valid user with Authorization hdr", async () => {
     const signedInUser = testCreatedUsers[0];
     signedInUser.isSignedIn = true;
-    validToken["sub"] = signedInUser.idpId;
-    mockedGetPayload.mockReturnValueOnce(validToken);
+    // validToken["sub"] = signedInUser.idpId;
+    mockedGetPayload.mockReturnValueOnce(validToken(signedInUser));
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
+    let sid: string = undefined;
+
     await request(app)
       .get("/api/auth/google.com/login")
       .set("Authorization", "Bearer mocksAsValid")
@@ -161,9 +190,24 @@ describe("Auth login API", () => {
       .expect(
         "set-cookie",
         /parlourSession=.*; Path=\/; Expires=.*; HttpOnly; SameSite=Strict/
-      );
+      )
+      .expect((res) => {
+        sid =
+          cookieParser.signedCookie(
+            cookie.parse(res.header["set-cookie"][0]).parlourSession,
+            process.env.SESSION_SECRET
+          ) || "not found";
+      });
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
     expect(mockedGetPayload.mock.calls).toHaveLength(1);
+
+    const s: ParlourSession = await findSession(sid);
+    const expires = new Date(s.expires);
+    const target = new Date(
+      Date.now() + MAXIMUM_SESSION_DURATION_IN_MILLISECONDS
+    );
+    expect(expires.valueOf()).toBeGreaterThanOrEqual(target.valueOf());
+    expect(s.sess.user_id).toEqual(signedInUser.uid);
   });
 });
 
@@ -235,7 +279,7 @@ describe("Auth register API", () => {
   });
 
   it("returns 409 on email not verified", async () => {
-    const unverifiedEmail = Object.assign({}, validToken);
+    const unverifiedEmail = Object.assign({}, testUserToken);
     unverifiedEmail["email_verified"] = false;
     mockedGetPayload.mockResolvedValueOnce(unverifiedEmail);
     const myTicket: LoginTicket = new LoginTicket();
@@ -255,7 +299,7 @@ describe("Auth register API", () => {
   });
 
   it("returns 409 on email doesn't match", async () => {
-    mockedGetPayload.mockResolvedValueOnce(validToken);
+    mockedGetPayload.mockResolvedValueOnce(testUserToken);
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
 
@@ -300,7 +344,7 @@ describe("Auth register API", () => {
   it("returns 409 on existing user", async () => {
     const signedInUser = testCreatedUsers[0];
     signedInUser.isSignedIn = false;
-    const dup = Object.assign({}, validToken);
+    const dup = Object.assign({}, testUserToken);
     dup["email"] = signedInUser.email;
     dup["sub"] = signedInUser.idpId;
     mockedGetPayload.mockReturnValueOnce(dup);
@@ -319,10 +363,12 @@ describe("Auth register API", () => {
   });
 
   it("returns 200 on valid user", async () => {
-    mockedGetPayload.mockResolvedValueOnce(validToken);
+    mockedGetPayload.mockResolvedValueOnce(testUserToken);
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
 
+    let sid: string = undefined;
+    let uid: string = undefined;
     await request(app)
       .post("/api/auth/google.com/register?code=mocksAsValid")
       .send(testUser)
@@ -336,7 +382,51 @@ describe("Auth register API", () => {
       .expect(
         "set-cookie",
         /parlourSession=.*; Path=\/; Expires=.*; HttpOnly; SameSite=Strict/
-      );
+      )
+      .expect((res) => {
+        sid =
+          cookieParser.signedCookie(
+            cookie.parse(res.header["set-cookie"][0]).parlourSession,
+            process.env.SESSION_SECRET
+          ) || "not found";
+        uid = res.body.uid;
+      });
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
+
+    const s: ParlourSession = await findSession(sid);
+    const expires = new Date(s.expires);
+    const target = new Date(
+      Date.now() + MAXIMUM_SESSION_DURATION_IN_MILLISECONDS
+    );
+    expect(expires.valueOf()).toBeWithin(
+      target.valueOf() - 1000,
+      target.valueOf() + 1000
+    );
+    expect(s.sess.user_id).toEqual(uid);
+  });
+});
+
+describe("Logout API", () => {
+  it("returns 403 on logout when no cookie provided", async (done) => {
+    await request(app).get("/api/auth/logout").expect(403);
+    done();
+  });
+
+  it("returns 200 with cookie provided", async (done) => {
+    await login(app, testCreatedUsers[0]);
+    const sid =
+      cookieParser.signedCookie(
+        cookie.parse(cookieJar.get()).parlourSession,
+        process.env.SESSION_SECRET
+      ) || "not found";
+    const sess: ParlourSession = await findSession(sid);
+    expect(sess.sess.user_id).toEqual(testCreatedUsers[0].uid);
+
+    const req = request(app)
+      .get("/api/auth/logout")
+      .set("cookie", cookieJar.get());
+    await req.expect(200);
+    expect(findSession(sid)).resolves.toEqual(nullSession);
+    done();
   });
 });
