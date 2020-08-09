@@ -69,6 +69,51 @@ export const getParlourRootDbPool = () => {
   return poolFromUrl(PARLOUR_ROOT_URL);
 };
 
+// export const coerceDateFromPgTimestamp = (stamp: string): Date => {
+//   const maybeEpoch = parseInt(stamp, 10);
+//   if (isNaN(maybeEpoch)) {
+//     stamp.match(
+//       /(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2}\.\d{3})\d*(\+\d{2})?(:\d{2})?/
+//     );
+//     // yyyy-mm-ddThh:mm:ss.mmm+TZ
+//     const withTz: string = stamp[0] + "T" + stamp[1];
+//     if (stamp[3]) {
+//       withTz.concat(stamp[3]);
+//       if (stamp[4]) {
+//         withTz.concat(stamp[4]);
+//       }
+//     } else {
+//       withTz.concat("+00:00");
+//     }
+//     return new Date(withTz);
+//   }
+
+//   // its an epoch!
+//   return new Date(maybeEpoch * 1000);
+// };
+
+const deserializeUser = (row: any) => {
+  const user: User = {
+    isSignedIn: false,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    username: row.username,
+    email: row.email,
+    email_subscription: row.email_subscription,
+    about: row.about,
+    profPicUrl: row.prof_img_url,
+    uid: row.uid,
+    lastSignin: row.recent_login,
+    idp: row.idp,
+    idpId: row.idp_id,
+  };
+  if (isNaN(row.recent_login)) {
+    // not an epoch, try to convert postgresql timestamp output to Date compatible
+    user.lastSignin = new Date(row.recent_login);
+  }
+  return user;
+};
+
 export const loginUser = async (idp: IDP, idp_id: string) => {
   const p = getParlourDbPool();
   let user: User = {
@@ -86,19 +131,11 @@ export const loginUser = async (idp: IDP, idp_id: string) => {
       logger.silly(
         `loginUser rowCount: ${result.rowCount}, rows.length: ${result.rows.length} result row[0]: ${result.rows[0]}`
       );
-      user = {
-        firstName: result.rows[0].first_name,
-        lastName: result.rows[0].last_name,
-        username: result.rows[0].username,
-        email: result.rows[0].email,
-        email_subscription: result.rows[0].email_subscription,
-        about: result.rows[0].about,
-        profPicUrl: result.rows[0].prof_img_url,
-        uid: result.rows[0].uid,
-        isSignedIn: true,
-        idp: idp,
-        idpId: idp_id,
-      };
+      let row = result.rows[0];
+      user = deserializeUser(row);
+      user.isSignedIn = true;
+      user.idp = idp;
+      user.idpId = idp_id;
     })
     .catch((error) => {
       logger.debug(`error in login_user: ${error}`);
@@ -133,19 +170,24 @@ export const regUser = async (user: User) => {
     if (result.rows.length != 1) {
       throw Error("regUser: Unexpected result rows " + result.rows.length);
     }
-    const createdUser: User = {
-      firstName: result.rows[0].first_name,
-      lastName: result.rows[0].last_name,
-      username: result.rows[0].username,
-      email: result.rows[0].email,
-      email_subscription: result.rows[0].email_subscription,
-      about: result.rows[0].about,
-      profPicUrl: result.rows[0].prof_img_url,
-      isSignedIn: false,
-      idp: user.idp, // idp is not present in the register_user response
-      idpId: user.idpId, // idp_id is not present in the register_user response
-      uid: result.rows[0].uid,
-    };
+    const createdUser = deserializeUser(result.rows[0]);
+    createdUser.idp = user.idp;
+    createdUser.idpId = user.idpId;
+    createdUser.isSignedIn = false;
+
+    // const createdUser: User = {
+    //   firstName: result.rows[0].first_name,
+    //   lastName: result.rows[0].last_name,
+    //   username: result.rows[0].username,
+    //   email: result.rows[0].email,
+    //   email_subscription: result.rows[0].email_subscription,
+    //   about: result.rows[0].about,
+    //   profPicUrl: result.rows[0].prof_img_url,
+    //   isSignedIn: false,
+    //   idp: user.idp, // idp is not present in the register_user response
+    //   idpId: user.idpId, // idp_id is not present in the register_user response
+    //   uid: result.rows[0].uid,
+    // };
     await client.query("COMMIT");
     return createdUser;
   } catch (e) {

@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Response, Request } from "express";
 import path from "path";
 import { logger } from "../common/logger";
 import WebSocket from "ws";
@@ -32,7 +32,19 @@ app.get(["/", "/index.html"], function (req, res) {
 
 app.use(sessions);
 app.use("/api", api);
-app.use("/graphql", graphql);
+
+// setup auth middleware for graphql
+const auth = (req: Request, res: Response, next: Function) => {
+  if (!req.session.user_id) {
+    logger.info("auth failed, no logged in user_id on session");
+    return res.sendStatus(401);
+  }
+
+  logger.debug("auth success, user:" + req.session.user_id);
+  next();
+};
+
+app.use("/graphql", auth, graphql);
 
 // start the express server
 const server = http.createServer(app);

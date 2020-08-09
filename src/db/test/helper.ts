@@ -50,7 +50,7 @@ export const cleanTestDb = async () => {
   logger.debug("cleanTestDb - beginning database cleanup");
   const p = await poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER);
   try {
-    await p.query("delete from parlour_public.user");
+    await p.query("delete from parlour_public.users");
     await p.query("delete from parlour_public.parlour");
     await p.query("delete from parlour_private.account");
     await p.query("delete from parlour_private.login_session");
@@ -67,9 +67,13 @@ export const deleteTestUsers = async () => {
     // const c = await p.connect();
     testCreatedUsers.forEach((u) => {
       dels.push(
-        p.query("delete from parlour_public.user where username = $1", [
+        p.query("delete from parlour_public.users where username = $1", [
           u.username,
-        ])
+        ]),
+        p.query(
+          "delete from parlour_private.login_session where sess->>'user_id' = $1",
+          [u.username]
+        )
       );
     });
     return await Promise.all(dels);
@@ -117,9 +121,11 @@ export const createUsers = async (
       });
   }
   const client = await poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER).connect();
-  await client.query("select count(*) from parlour_public.user").then((res) => {
-    logger.debug("createdUsers results: " + res.rows.length);
-  });
+  await client
+    .query("select count(*) from parlour_public.users")
+    .then((res) => {
+      logger.debug("createdUsers results: " + res.rows.length);
+    });
   client.release();
 };
 

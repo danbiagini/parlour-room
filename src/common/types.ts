@@ -23,6 +23,7 @@ export interface User {
   uid?: string;
   createdAt?: string;
   updatedAt?: string;
+  lastSignin?: Date;
 }
 
 export interface AppState {

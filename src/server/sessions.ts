@@ -4,6 +4,7 @@ import session from "express-session";
 import { getParlourRootDbPool } from "./parlour_db";
 import { Pool } from "pg";
 import { logger } from "../common/logger";
+import { IncomingMessage } from "http";
 
 const MILLISECOND = 1;
 const SECOND = 1000 * MILLISECOND;
@@ -22,10 +23,14 @@ if (!DB_POSTGRAPHILE_USER) {
   throw new Error("DB_POSTGRAPHILE_USER required");
 }
 
-export const MAXIMUM_SESSION_DURATION_IN_MILLISECONDS =
+export let MAXIMUM_SESSION_DURATION_IN_MILLISECONDS =
   parseInt(process.env.MAXIMUM_SESSION_DURATION_IN_MILLISECONDS, 10) || 3 * DAY;
 
 const pgPool = getParlourRootDbPool();
+
+if (process.env.NODE_ENV === "test") {
+  MAXIMUM_SESSION_DURATION_IN_MILLISECONDS = 5000;
+}
 
 interface ParlourStoreOptions {
   pool: Pool;
@@ -67,6 +72,13 @@ class ParlourSessionStore extends session.Store {
 
 const pgStore = ConnectPgSimple(session);
 
+export interface IRequestSession extends IncomingMessage {
+  session: {
+    user_id: string;
+    cookie: string;
+  };
+}
+
 export interface ParlourSession {
   sid: string;
   sess: {
@@ -77,6 +89,10 @@ export interface ParlourSession {
   updated_at: Date;
   created_at: Date;
 }
+
+// export interface ISessionRequest extends Express.Request {
+//   session: ParlourSession;
+// }
 
 export const nullSession: Readonly<ParlourSession> = {
   sid: undefined,
@@ -120,7 +136,7 @@ export const findSession = async (sid: string): Promise<ParlourSession> => {
           const session: ParlourSession = {
             sid: result.rows[0].sid,
             sess: result.rows[0].sess,
-            expires: new Date(result.rows[0].expire_epoch),
+            expires: new Date(result.rows[0].expire_epoch), // millis from query *1000
             created_at: new Date(result.rows[0].created_at),
             updated_at: new Date(result.rows[0].updated_at),
           };

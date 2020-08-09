@@ -26,9 +26,7 @@ import { agent as request } from "supertest";
 import { OAuth2Client, LoginTicket } from "google-auth-library";
 import * as cookie from "cookie";
 import cookieParser from "cookie-parser";
-
-// const mockedVerifyIdToken = jest.fn();
-// const mockedGetPayload = jest.fn();
+import { User } from "../../common/types";
 
 const testUserToken = validToken(testUser);
 
@@ -39,12 +37,12 @@ beforeAll(async () => {
   jest
     .spyOn(LoginTicket.prototype, "getPayload")
     .mockImplementation(mockedGetPayload);
-  await cleanTestDb();
+  // await cleanTestDb();
+  await deleteTestData();
   await createUsers(10);
 });
 
 afterAll(async () => {
-  await deleteTestData();
   await cleanPools();
   jest.restoreAllMocks();
 });
@@ -52,10 +50,6 @@ afterAll(async () => {
 beforeEach(() => {
   mockedVerifyIdToken.mockClear();
   mockedGetPayload.mockClear();
-});
-
-afterEach(() => {
-  // validToken.sub = testUser.idpId;
 });
 
 describe("Auth login API", () => {
@@ -146,12 +140,14 @@ describe("Auth login API", () => {
     let sid: string = undefined;
     await request(app)
       .get("/api/auth/google.com/login?code=mocksAsValid")
-      .expect(200, signedInUser)
+      .expect(200)
       .expect(
         "set-cookie",
         /parlourSession=.*; Path=\/; Expires=.*; HttpOnly; SameSite=Strict/
       )
       .expect((res) => {
+        res.body.lastSignin = new Date(res.body.lastSignin);
+        expect(res.body).toMatchObject(signedInUser);
         sid =
           cookieParser.signedCookie(
             cookie.parse(res.header["set-cookie"][0]).parlourSession,
@@ -186,12 +182,19 @@ describe("Auth login API", () => {
     await request(app)
       .get("/api/auth/google.com/login")
       .set("Authorization", "Bearer mocksAsValid")
-      .expect(200, signedInUser)
+      .expect(200)
       .expect(
         "set-cookie",
         /parlourSession=.*; Path=\/; Expires=.*; HttpOnly; SameSite=Strict/
       )
       .expect((res) => {
+        res.body.lastSignin = new Date(res.body.lastSignin);
+        let localCopy: User = {
+          isSignedIn: false,
+        };
+        Object.assign(localCopy, signedInUser);
+        delete localCopy.lastSignin;
+        expect(res.body).toMatchObject(localCopy);
         sid =
           cookieParser.signedCookie(
             cookie.parse(res.header["set-cookie"][0]).parlourSession,
@@ -427,6 +430,77 @@ describe("Logout API", () => {
       .set("cookie", cookieJar.get());
     await req.expect(200);
     expect(findSession(sid)).resolves.toEqual(nullSession);
+    done();
+  });
+});
+
+describe("Graphql queries", () => {
+  const graphqlAllUsers = {
+    query: `
+         {
+          users {
+            nodes {
+              firstName
+              lastName
+              email
+              uid
+            }
+          }
+        }`,
+  };
+
+  it("returns 401 on basic query w/ no auth", async (done) => {
+    await request(app).post("/graphql").send(graphqlAllUsers).expect(401);
+    done();
+  });
+
+  it("returns 401 with unsigned cookie provided", async (done) => {
+    await login(app, testCreatedUsers[0]);
+    const sid =
+      cookieParser.signedCookie(
+        cookie.parse(cookieJar.get()).parlourSession,
+        process.env.SESSION_SECRET
+      ) || "not found";
+    const sess: ParlourSession = await findSession(sid);
+    expect(sess.sess.user_id).toEqual(testCreatedUsers[0].uid);
+
+    const req = request(app)
+      .post("/graphql")
+      .set("cookie", `parlourSession=${sid}`)
+      .send(graphqlAllUsers);
+    await req.expect(401);
+    done();
+  });
+
+  it("returns 200 on basic query w/ auth", async (done) => {
+    await login(app, testCreatedUsers[0]);
+
+    await request(app)
+      .post("/graphql")
+      .set("cookie", cookieJar.get())
+      .send(graphqlAllUsers)
+      .expect(200, {});
+    done();
+  });
+
+  it("returns 200 on whoami w/ auth", async (done) => {
+    await login(app, testCreatedUsers[0]);
+
+    const whoami = {
+      query: `{
+                whoami {
+                  firstName
+                  lastName
+                  email
+                  uid
+                }
+              }`,
+    };
+    await request(app)
+      .post("/graphql")
+      .set("cookie", cookieJar.get())
+      .send(whoami)
+      .expect(200, {});
     done();
   });
 });

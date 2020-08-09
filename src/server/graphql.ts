@@ -1,4 +1,5 @@
 import * as express from "express";
+import { IRequestSession } from "./sessions";
 import { postgraphile, PostGraphileOptions } from "postgraphile";
 import { getParlourDbPool } from "./parlour_db";
 
@@ -20,6 +21,14 @@ const graphqlOptions: PostGraphileOptions = {
   legacyRelations: "omit",
   enableQueryBatching: true,
   graphqlRoute: "/",
+  // additionalGraphQLContextFromRequest: async (req, res) => {
+  //   return {
+  //     user_id: req.session.user_id,
+  //   }
+  // },
+  pgSettings: async (request: IRequestSession) => ({
+    "parlour.user.uid": `${request.session.user_id}`,
+  }),
 };
 
 if (process.env.NODE_ENV !== "production") {
@@ -31,21 +40,38 @@ if (process.env.NODE_ENV !== "production") {
     subscriptions: true,
     watchPg: true,
     showErrorStack: "json",
-    extendedErrors: ["hint", "detail", "errcode"],
+    extendedErrors: [
+      "hint",
+      "detail",
+      "errcode",
+      "severity",
+      "positon",
+      "internalPosition",
+      "internalQuery",
+      "where",
+      "schema",
+      "table",
+      "column",
+      "dataType",
+      "constraint",
+      "file",
+      "line",
+      "routine",
+    ],
     exportGqlSchemaPath: "schema.graphql",
     graphiqlRoute: "/graphiql",
     graphiql: true,
     enhanceGraphiql: true,
+    enableCors: true,
+    allowExplain: true,
     // allowExplain(req) {
     //   // TODO: customise condition!
     //   return true;
     // },
-    // pgSettings(req) {
-    //   /* TODO */
-    // },
   };
   if (process.env.NODE_ENV === "test") {
     graphqlDevOptions.graphiql = false;
+    graphqlDevOptions.ownerConnectionString = undefined;
     graphqlDevOptions.exportGqlSchemaPath = undefined;
     graphqlDevOptions.watchPg = false;
   }
@@ -61,9 +87,6 @@ if (process.env.NODE_ENV !== "production") {
     extendedErrors: ["errcode"],
     graphiql: false,
     disableQueryLog: true, // our default logging has performance issues, but do make sure you have a logging system in place!
-    // pgSettings(req) {
-    //   /* TODO */
-    // },
   };
   Object.assign(graphqlOptions, graphqlProdOptions);
 }

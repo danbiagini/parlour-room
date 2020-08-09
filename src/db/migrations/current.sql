@@ -8,7 +8,7 @@ create extension if not exists "citext";
 -- grants
 alter default privileges revoke execute on functions from public;
 grant usage on schema parlour_public to parlour_anonymous, parlour_user;
-grant usage on schema parlour_private to parlour_postgraphile;
+-- grant usage on schema parlour_private to parlour_postgraphile;
 
 drop function if exists parlour_public.set_updated_at cascade;
 create or replace function parlour_private.set_updated_at() returns trigger as $$
@@ -18,9 +18,15 @@ begin
 end;
 $$ language plpgsql;
 
+drop function if exists parlour_public.get_current_user() cascade;
+create or replace function parlour_public.get_current_user() returns text as $$
+  select current_setting('parlour.user.uid', true);
+$$ language sql stable;
+grant execute on function parlour_public.get_current_user() to parlour_user;
+
 -- User stuff
-drop table if exists parlour_public.user cascade;
-create table parlour_public.user (
+drop table if exists parlour_public.users cascade;
+create table parlour_public.users (
 	uid	uuid primary key default gen_random_uuid(),
 
   -- https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
@@ -31,38 +37,45 @@ create table parlour_public.user (
 	about text check (char_length(about) < 2048),
 	prof_img_url text check ((char_length(prof_img_url) < 2048) AND (prof_img_url ~ '^https?://[^/]+'::text)),
   email_subscription boolean default false,
-  recent_login timestamp,
-	created_at timestamp not null  default now(),
-	updated_at timestamp not null default now()
+  recent_login timestamptz,
+	created_at timestamptz not null  default now(),
+	updated_at timestamptz not null default now()
 );
 
-comment on table parlour_public.user is 'Base user table for profiles';
-comment on column parlour_public.user.uid is 'System generated account uid';
-comment on column parlour_public.user.username is 'User generated, externally used unique identifier';
-comment on column parlour_public.user.first_name is 'Optional: first name for profile';
-comment on column parlour_public.user.last_name is 'Optional: last name  for profile';
-comment on column parlour_public.user.email is 'Optional: email address for profile';
-comment on column parlour_public.user.email_subscription is 'Boolean, does the user want email';
-comment on column parlour_public.user.about is 'Optional: description / about info for profile';
-comment on column parlour_public.user.created_at is 'Time this user was created';
-comment on column parlour_public.user.updated_at is 'Time this user was last updated';
-comment on column parlour_public.user.recent_login is 'Last time user was seen';
+comment on table parlour_public.users is 'Base user table for profiles';
+comment on column parlour_public.users.uid is 'System generated account uid';
+comment on column parlour_public.users.username is 'User generated, externally used unique identifier';
+comment on column parlour_public.users.first_name is 'Optional: first name for profile';
+comment on column parlour_public.users.last_name is 'Optional: last name  for profile';
+comment on column parlour_public.users.email is 'Optional: email address for profile';
+comment on column parlour_public.users.email_subscription is 'Boolean, does the user want email';
+comment on column parlour_public.users.about is 'Optional: description / about info for profile';
+comment on column parlour_public.users.created_at is 'Time this user was created';
+comment on column parlour_public.users.updated_at is 'Time this user was last updated';
+comment on column parlour_public.users.recent_login is 'Last time user was seen';
 
-grant select on table parlour_public.user to parlour_anonymous, parlour_user;
-grant update, delete on table parlour_public.user to parlour_user;
+alter table parlour_public.users enable row level security;
+create policy user_policy on users
+  using (true);
+-- create policy user_policy on users 
+--   using ('uid' = get_current_user());
 
-drop function if exists parlour_public.user_full_name;
-create function parlour_public.user_full_name(pUser parlour_public.user) returns text as $$
+grant select on table parlour_public.users to parlour_user;
+grant update, delete on table parlour_public.users to parlour_user;
+
+drop function if exists parlour_public.users_full_name;
+create function parlour_public.users_full_name(pUser parlour_public.users) returns text as $$
 	select pUser.first_name || ' ' || pUser.last_name
 $$ language sql stable;
 
-comment on function parlour_public.user_full_name is 'A user''s full name';
-grant execute on function parlour_public.user_full_name(parlour_public.user) to parlour_anonymous, parlour_user;
+comment on function parlour_public.users_full_name is 'A user''s full name';
+grant execute on function parlour_public.users_full_name(parlour_public.users) to parlour_anonymous, parlour_user;
 
-drop trigger if exists user_updated_at on parlour_public.user;
+drop trigger if exists user_updated_at on parlour_public.users;
 create trigger user_updated_at before update
-	on parlour_public.user 
+	on parlour_public.users 
 	for each row
+  when (current_setting('parlour.skip_updated_at', true) <> 'true')
 	execute procedure parlour_private.set_updated_at();
 
 -- Parlours
@@ -70,10 +83,10 @@ drop table if exists parlour_public.parlour cascade;
 create table parlour_public.parlour (
 	uid uuid primary key default gen_random_uuid(),
 	name text not null,
-	owner_uid uuid not null references parlour_public.user(uid),
+	owner_uid uuid not null references parlour_public.users(uid),
 	description text,
-	created_at timestamp not null default now(),
-	updated_at timestamp not null default now()
+	created_at timestamptz not null default now(),
+	updated_at timestamptz not null default now()
 );
 create index on parlour_public.parlour(owner_uid);
 
@@ -104,7 +117,7 @@ create type parlour_public.identityProvider as enum (
 
 drop table if exists parlour_private.account cascade;
 create table parlour_private.account (
-	uid uuid primary key references parlour_public.user(uid) on delete cascade,
+	uid uuid primary key references parlour_public.users(uid) on delete cascade,
 	idp parlour_public.identityProvider not null,
 	id_token text,
 	idp_id text not null
@@ -127,12 +140,12 @@ create function parlour_public.register_user(
 	prof_url text,
 	idp parlour_public.identityProvider,
 	idp_id text
-) returns parlour_public.user as $$
+) returns parlour_public.users as $$
 declare
-	newUser parlour_public.user;
+	newUser parlour_public.users;
 begin 
-	insert into parlour_public.user (username, first_name, last_name, email, about, prof_img_url, email_subscription) values
-	(username, first_name, last_name, email, about, prof_url, email_subscription)
+	insert into parlour_public.users (username, first_name, last_name, email, about, prof_img_url, email_subscription, recent_login) values
+	(username, first_name, last_name, email, about, prof_url, email_subscription, now())
 	returning * into newUser;
 
 	insert into parlour_private.account (uid, idp, idp_id) values
@@ -157,12 +170,14 @@ create type parlour_public.jwt_token as (
 drop function if exists parlour_private.login_user;
 create function parlour_private.login_user(
 	f_idp_id parlour_private.account.idp_id%TYPE, 
-	f_idp parlour_public.identityProvider) returns parlour_public.user as $$
-declare user_row parlour_public.user%ROWTYPE;
+	f_idp parlour_public.identityProvider) returns parlour_public.users as $$
+declare user_row parlour_public.users%ROWTYPE;
 begin
-  select u.* into strict user_row from parlour_public.user as u inner join parlour_private.account as a
+  select u.* into strict user_row from parlour_public.users as u inner join parlour_private.account as a
 		on u.uid = a.uid
 		where a.idp_id = f_idp_id and a.idp = f_idp;
+  update parlour_public.users set recent_login = now();
+  perform set_config('parlour.skip_updated_at', 'true', false);
   return user_row;
 exception
     when NO_DATA_FOUND then
@@ -171,7 +186,7 @@ exception
       raise exception 'idp_id ''%'' not unique', f_idp_id;
 
 end;
-$$ language plpgsql stable security definer;
+$$ language plpgsql security definer;
 
 grant execute on function parlour_private.login_user(parlour_private.account.idp_id%TYPE, parlour_public.identityProvider) to parlour_postgraphile;
 comment on function parlour_private.login_user(parlour_private.account.idp_id%TYPE, parlour_public.identityProvider) is 'Login a user based on idp identity.  REQUIRES the identity was already verified!';
@@ -180,9 +195,15 @@ drop table if exists parlour_private.login_session cascade;
 create table parlour_private.login_session (
   sid varchar primary key NOT NULL,
   sess json NOT NULL,
-	created_at timestamp not null  default now(),
-	updated_at timestamp not null default now(),
-  expire timestamp NOT NULL
+	created_at timestamptz not null  default now(),
+	updated_at timestamptz not null default now(),
+  expire timestamptz NOT NULL
 );
 create index ON parlour_private.login_session(expire);
 grant all on table parlour_private.login_session to parlour_root;
+
+drop trigger if exists login_session_updated_at on parlour_private.login_session;
+create trigger login_session_updated_at before update
+	on parlour_private.login_session 
+	for each row
+	execute procedure parlour_private.set_updated_at();

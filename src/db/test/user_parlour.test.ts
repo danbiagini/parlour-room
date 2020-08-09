@@ -24,6 +24,46 @@ beforeAll(async () => {
   await createUsers(1, IDP.GOOGLE);
 });
 
+describe("utility functionds", () => {
+  it("can coerce pgtime w/ no time zone to Date", async (done) => {
+    expect.hasAssertions();
+    poolFromUrl(TEST_DATABASE_URL, process.env.DB_ANON_USER).query(
+      "select '2020-08-07'::timestamp as stamp",
+      (err, result) => {
+        if (err) {
+          console.log("sql error: " + err);
+          expect(err).toBeFalsy();
+          return done();
+        }
+        expect(result.rows.length).toEqual(1);
+        expect(result.rows[0]["stamp"]).toMatchObject(
+          new Date("2020-08-07T00:00:00")
+        );
+        done();
+      }
+    );
+  });
+
+  it("can coerce pgtime w/ time zone to Date", async (done) => {
+    expect.hasAssertions();
+    poolFromUrl(TEST_DATABASE_URL, process.env.DB_ANON_USER).query(
+      "select '2020-08-07'::timestamp at time zone 'utc' as stamp",
+      (err, result) => {
+        if (err) {
+          console.log("sql error: " + err);
+          expect(err).toBeFalsy();
+          return done();
+        }
+        expect(result.rowCount).toEqual(1);
+        expect(result.rows[0]["stamp"]).toMatchObject(
+          new Date("2020-08-07 00:00:00-00:00")
+        );
+        done();
+      }
+    );
+  });
+});
+
 describe("grant restrictions on mutations ", () => {
   it("cannot manually insert a user", async () => {
     const client = await poolFromUrl(
@@ -32,7 +72,7 @@ describe("grant restrictions on mutations ", () => {
     ).connect();
     await expect(
       client.query(
-        `insert into parlour_public.user (username, first_name, about) 
+        `insert into parlour_public.users (username, first_name, about) 
 		values ('test123', 'Test', 'Once upon a test')`
       )
     ).rejects.toThrow("permission denied for table user");
@@ -70,7 +110,7 @@ describe("register new user", () => {
     let u1 = testCreatedUsers[0];
     expect.assertions(1);
     await expect(regUser(u1)).rejects.toThrow(
-      'duplicate key value violates unique constraint "user_username_key"'
+      'duplicate key value violates unique constraint "users_username_key"'
     );
   });
 
@@ -80,7 +120,7 @@ describe("register new user", () => {
     u1.firstName = "ThisIsLong".repeat(8);
     expect.assertions(1);
     await expect(regUser(u1)).rejects.toThrow(
-      'new row for relation "user" violates check constraint "user_first_name_check"'
+      'new row for relation "users" violates check constraint "users_first_name_check"'
     );
   });
 
@@ -90,7 +130,7 @@ describe("register new user", () => {
     u1.lastName = "ThisIsLong".repeat(8);
     expect.assertions(1);
     await expect(regUser(u1)).rejects.toThrow(
-      'new row for relation "user" violates check constraint "user_last_name_check"'
+      'new row for relation "users" violates check constraint "users_last_name_check"'
     );
   });
 
@@ -100,7 +140,7 @@ describe("register new user", () => {
     u1.email = "ThisIsLong".repeat(32) + "@smarty.com";
     expect.assertions(1);
     await expect(regUser(u1)).rejects.toThrow(
-      'new row for relation "user" violates check constraint "user_email_check"'
+      'new row for relation "users" violates check constraint "users_email_check"'
     );
   });
 
@@ -110,7 +150,7 @@ describe("register new user", () => {
     u1.email = "ThisIsNotAnEmail";
     expect.assertions(1);
     await expect(regUser(u1)).rejects.toThrow(
-      'new row for relation "user" violates check constraint "user_email_check"'
+      'new row for relation "users" violates check constraint "users_email_check"'
     );
   });
   it("error on new user -- about > 2k", async () => {
@@ -119,7 +159,7 @@ describe("register new user", () => {
     u1.about = "ThisIsLong".repeat(2048 / 10 + 1);
     expect.assertions(1);
     await expect(regUser(u1)).rejects.toThrow(
-      'new row for relation "user" violates check constraint "user_about_check"'
+      'new row for relation "users" violates check constraint "users_about_check"'
     );
   });
 
@@ -129,7 +169,7 @@ describe("register new user", () => {
     u1.profPicUrl = "ThisIsLong".repeat(2048 / 10 + 1);
     expect.assertions(1);
     await expect(regUser(u1)).rejects.toThrow(
-      'new row for relation "user" violates check constraint "user_prof_img_url_check"'
+      'new row for relation "users" violates check constraint "users_prof_img_url_check"'
     );
   });
 

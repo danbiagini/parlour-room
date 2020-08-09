@@ -140,7 +140,7 @@ api.post("/auth/:idp/register", async (req, res) => {
         return errorResponse(res, 401, "Token expired");
       } else if (
         err ==
-        'error: duplicate key value violates unique constraint "user_username_key"'
+        'error: duplicate key value violates unique constraint "users_username_key"'
       ) {
         return errorResponse(res, 409, "User already exists");
       } else if (
