@@ -55,10 +55,8 @@ comment on column parlour_public.users.updated_at is 'Time this user was last up
 comment on column parlour_public.users.recent_login is 'Last time user was seen';
 
 alter table parlour_public.users enable row level security;
-create policy user_policy on users
-  using (true);
--- create policy user_policy on users 
---   using ('uid' = get_current_user());
+create policy user_policy on users 
+  using (uid = get_current_user()::uuid);
 
 grant select on table parlour_public.users to parlour_user;
 grant update, delete on table parlour_public.users to parlour_user;

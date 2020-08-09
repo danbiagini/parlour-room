@@ -11,17 +11,21 @@ import {
   deleteTestData,
   createUsers,
   testCreatedUsers,
-  cleanTestDb,
+  // cleanTestDb,
 } from "./helper";
 
+// const testId = path.basename(__filename);
+const testId = "user-parlour.test";
+console.log("testing with testId:" + testId);
 afterAll(async () => {
-  await deleteTestData();
+  await deleteTestData(testId);
   await cleanPools();
 });
 
 beforeAll(async () => {
-  await cleanTestDb();
-  await createUsers(1, IDP.GOOGLE);
+  await deleteTestData(testId);
+  // await cleanTestDb();
+  await createUsers(1, testId, IDP.GOOGLE);
 });
 
 describe("utility functionds", () => {

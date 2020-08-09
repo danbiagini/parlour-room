@@ -9,7 +9,7 @@ import { logger } from "../../common/logger";
  */
 import { ts } from "./jest.watch.hack";
 import { QueryResult } from "pg";
-if (ts) {
+if (ts && process.env.NODE_ENV === "test") {
   /*
    * ... but we don't want the changes showing up under git, so we throw
    * them away again once the tests have been triggered.
@@ -76,17 +76,41 @@ export const deleteTestUsers = async () => {
         )
       );
     });
+    dels.push(
+      p.query("delete from parlour_public.users where username = $1", [
+        testUser.username,
+      ])
+    );
     return await Promise.all(dels);
   } catch (e) {
     console.error("error deleteTestUsers:", e);
   }
 };
 
-export const deleteTestData = async () => {
+const deleteDataById = async (id: string) => {
+  let statements: Promise<QueryResult>[] = [];
+  const p = poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER);
+  statements.push(
+    p.query(
+      "delete from parlour_public.users where username like '%' || $1 || '%'",
+      [id]
+    )
+  );
+  return await Promise.all(statements).catch((err) => {
+    console.log("error deleting by id:" + err);
+  });
+};
+
+export const deleteTestData = async (dataId?: string) => {
   try {
-    return await deleteTestUsers();
+    let dels: Promise<any>[] = [];
+    dels.push(deleteTestUsers());
+    if (dataId) {
+      dels.push(deleteDataById(dataId));
+    }
+    return await Promise.all(dels);
   } catch (e) {
-    console.error("unable to delete users, exception:", e);
+    console.error("unable to delete all test data, exception:", e);
     throw e;
   }
 };
@@ -96,11 +120,12 @@ export const testCreatedUsers: types.User[] = [];
 
 export const createUsers = async (
   count: number = 1,
+  base: string = "d.jb",
   idp: types.IDP = types.IDP.GOOGLE
 ) => {
   for (let i = 0; i < count; i++) {
     const userLetter = "abcdefghijklmnopqrstuvwxyz"[i];
-    const email = userLetter + i + "@d.jb";
+    const email = userLetter + i + "@" + base;
     const u: types.User = {
       email: email,
       isSignedIn: false,
@@ -108,7 +133,7 @@ export const createUsers = async (
       lastName: `${userLetter}_Last`,
       username: email,
       idp: idp,
-      idpId: userLetter + userLetter,
+      idpId: userLetter + userLetter + base,
       about: userLetter.repeat(10),
     };
     await regUser(u)
@@ -117,22 +142,35 @@ export const createUsers = async (
         testCreatedUsers.push(user);
       })
       .catch((err) => {
-        logger.error(`error creating user for tests: ${err}`);
+        let eStr: String = new String(err);
+        if (eStr.includes("duplicate key value violates unique constraint")) {
+          // user already existed, role with it...
+          userCreationCounter++;
+          testCreatedUsers.push(u);
+        } else {
+          logger.error(`error creating user for tests: ${err}`);
+        }
       });
   }
   const client = await poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER).connect();
   await client
     .query("select count(*) from parlour_public.users")
     .then((res) => {
-      logger.debug("createdUsers results: " + res.rows.length);
+      logger.debug("createdUsers results: " + res.rows[0][0]);
     });
   client.release();
 };
 
 // best intentions, turns out this isn't really that usable
-export const createSession = async (user: types.User): Promise<string> => {
+export const createSession = async (
+  user: types.User,
+  exp?: Date
+): Promise<string> => {
+  if (!exp) {
+    exp = new Date(Date.now() + 10000);
+  }
   return new Promise((resolve, reject) => {
-    const exp = new Date(Date.now() + 10000);
+    // const exp = new Date(Date.now() + 10000);
     poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER)
       .connect()
       .then((client) => {

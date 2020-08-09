@@ -12,7 +12,6 @@ import {
   deleteTestData,
   testUser,
   testCreatedUsers,
-  cleanTestDb,
 } from "../../db/test/helper";
 
 import {
@@ -23,12 +22,14 @@ import {
   cookieJar,
 } from "./api_helper";
 import { agent as request } from "supertest";
-import { OAuth2Client, LoginTicket } from "google-auth-library";
+import { OAuth2Client, LoginTicket, TokenPayload } from "google-auth-library";
 import * as cookie from "cookie";
 import cookieParser from "cookie-parser";
 import { User } from "../../common/types";
+import path from "path";
 
-const testUserToken = validToken(testUser);
+const testId = path.basename(__filename);
+let testUserToken: TokenPayload = validToken(testUser);
 
 beforeAll(async () => {
   jest
@@ -38,11 +39,13 @@ beforeAll(async () => {
     .spyOn(LoginTicket.prototype, "getPayload")
     .mockImplementation(mockedGetPayload);
   // await cleanTestDb();
-  await deleteTestData();
-  await createUsers(10);
+  await deleteTestData(testId);
+  await createUsers(10, testId);
+
 });
 
 afterAll(async () => {
+  await deleteTestData(testId);
   await cleanPools();
   jest.restoreAllMocks();
 });
@@ -473,34 +476,65 @@ describe("Graphql queries", () => {
   });
 
   it("returns 200 on basic query w/ auth", async (done) => {
-    await login(app, testCreatedUsers[0]);
+    const u = testCreatedUsers[0];
+    await login(app, u);
 
     await request(app)
       .post("/graphql")
       .set("cookie", cookieJar.get())
       .send(graphqlAllUsers)
-      .expect(200, {});
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toMatchObject({
+          data: {
+            users: {
+              nodes: [
+                {
+                  firstName: u.firstName,
+                  lastName: u.lastName,
+                  email: u.email,
+                  uid: u.uid,
+                },
+              ],
+            },
+          },
+        });
+      });
     done();
   });
 
-  it("returns 200 on whoami w/ auth", async (done) => {
-    await login(app, testCreatedUsers[0]);
+  // it("returns 200 on whoami w/ auth", async (done) => {
+  //   const u = testCreatedUsers[0];
+  //   await login(app, u);
 
-    const whoami = {
-      query: `{
-                whoami {
-                  firstName
-                  lastName
-                  email
-                  uid
-                }
-              }`,
-    };
-    await request(app)
-      .post("/graphql")
-      .set("cookie", cookieJar.get())
-      .send(whoami)
-      .expect(200, {});
-    done();
-  });
+  //   const whoami = {
+  //     query: `{
+  //               whoami {
+  //                 firstName
+  //                 lastName
+  //                 email
+  //                 uid
+  //               }
+  //             }`,
+  //   };
+  //   await request(app)
+  //     .post("/graphql")
+  //     .set("cookie", cookieJar.get())
+  //     .send(whoami)
+  //     .expect(200, {
+  //       data: {
+  //         users: {
+  //           nodes: [
+  //             {
+  //               firstName: "Dan",
+  //               lastName: "B",
+  //               email: "db",
+  //               uid: "test",
+  //             },
+  //           ],
+  //         },
+  //       },
+  //     });
+  //   done();
+  // });
 });
