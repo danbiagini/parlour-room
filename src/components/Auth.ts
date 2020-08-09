@@ -14,6 +14,8 @@ export default class Auth {
   }
 
   public async logOut(idpLogout: () => void) {
+    console.log("logging out");
+    await this._apiClient.get("/api/auth/logout");
     return idpLogout();
   }
 
@@ -56,3 +58,5 @@ export default class Auth {
     return response;
   }
 }
+
+export const auth = new Auth();

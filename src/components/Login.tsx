@@ -13,7 +13,7 @@ import * as config from "../common/client_config";
 import { RootState } from "../store/index";
 import { signinIdp, signoutIdp } from "../store/actions";
 import { User, IDP } from "../common/types";
-import Auth from "./Auth";
+import { auth } from "./Auth";
 
 export const Login: React.FC = () => {
   const isSignedIn = useSelector((state: RootState) => state.user.isSignedIn);
@@ -21,7 +21,6 @@ export const Login: React.FC = () => {
   const email = useSelector((state: RootState) => state.user.email);
   const history = useHistory();
   const dispatch = useDispatch();
-  const auth = new Auth();
 
   const responseSuccessGoogle = (response: GoogleLoginResponse) => {
     const id = response.googleId;

@@ -6,6 +6,7 @@ import { RootState } from "../store/index";
 import { signoutIdp } from "../store/actions";
 import RoutedButton from "./RoutedButton";
 import { User } from "../common/types";
+import { auth } from "./Auth";
 
 interface UserMenuProps {
   logout: () => void;
@@ -34,7 +35,7 @@ export const NavBarUI: React.FC = () => {
   const isSignedIn = user.isSignedIn;
 
   const logout = () => {
-    dispatch(signoutIdp());
+    auth.logOut(() => dispatch(signoutIdp()));
   };
 
   return (
