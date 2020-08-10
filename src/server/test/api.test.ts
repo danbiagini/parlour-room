@@ -41,7 +41,6 @@ beforeAll(async () => {
   // await cleanTestDb();
   await deleteTestData(testId);
   await createUsers(10, testId);
-
 });
 
 afterAll(async () => {

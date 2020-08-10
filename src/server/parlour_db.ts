@@ -154,7 +154,7 @@ export const regUser = async (user: User) => {
   try {
     await client.query("BEGIN");
     const result = await client.query(
-      "select * from parlour_public.register_user($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+      "select * from parlour_private.register_user($1, $2, $3, $4, $5, $6, $7, $8, $9)",
       [
         user.username,
         user.lastName,

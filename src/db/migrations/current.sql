@@ -7,8 +7,8 @@ create extension if not exists "citext";
 
 -- grants
 alter default privileges revoke execute on functions from public;
-grant usage on schema parlour_public to parlour_anonymous, parlour_user;
--- grant usage on schema parlour_private to parlour_postgraphile;
+grant usage on schema parlour_public to parlour_anonymous, parlour_user, parlour_postgraphile, parlour_admin;
+grant usage on schema parlour_private to parlour_admin;
 
 drop function if exists parlour_public.set_updated_at cascade;
 create or replace function parlour_private.set_updated_at() returns trigger as $$
@@ -19,8 +19,8 @@ end;
 $$ language plpgsql;
 
 drop function if exists parlour_public.get_current_user() cascade;
-create or replace function parlour_public.get_current_user() returns text as $$
-  select current_setting('parlour.user.uid', true);
+create or replace function parlour_public.get_current_user() returns uuid as $$
+  select current_setting('parlour.user.uid', true)::uuid;
 $$ language sql stable;
 grant execute on function parlour_public.get_current_user() to parlour_user;
 
@@ -56,10 +56,9 @@ comment on column parlour_public.users.recent_login is 'Last time user was seen'
 
 alter table parlour_public.users enable row level security;
 create policy user_policy on users 
-  using (uid = get_current_user()::uuid);
+  using (uid = get_current_user());
 
 grant select on table parlour_public.users to parlour_user;
-grant update, delete on table parlour_public.users to parlour_user;
 
 drop function if exists parlour_public.users_full_name;
 create function parlour_public.users_full_name(pUser parlour_public.users) returns text as $$
@@ -75,6 +74,15 @@ create trigger user_updated_at before update
 	for each row
   when (current_setting('parlour.skip_updated_at', true) <> 'true')
 	execute procedure parlour_private.set_updated_at();
+
+drop function if exists parlour_public.whoami;
+create function parlour_public.whoami() returns parlour_public.users as $$
+  select * from parlour_public.users 
+    where uid = current_setting('parlour.user.uid', true)::uuid;
+$$ language sql stable;
+
+comment on function parlour_public.whoami is 'Get the user object for logged in user';
+grant execute on function parlour_public.whoami to parlour_user;
 
 -- Parlours
 drop table if exists parlour_public.parlour cascade;
@@ -96,8 +104,7 @@ comment on column parlour_public.parlour.description is 'Description of the parl
 comment on column parlour_public.parlour.created_at is 'Time this parlour was created';
 comment on column parlour_public.parlour.updated_at is 'Time this parlour was last updated';
 
-grant select on table parlour_public.parlour to parlour_anonymous, parlour_user;
-grant insert, update, delete on table parlour_public.parlour to parlour_user;
+grant select on table parlour_public.parlour to parlour_user;
 
 drop trigger if exists parlour_updated_at on parlour_public.parlour;
 create trigger parlour_updated_at before update
@@ -105,6 +112,31 @@ create trigger parlour_updated_at before update
 	for each row
 	execute procedure parlour_private.set_updated_at();
 
+drop type if exists parlourRole cascade;
+create type parlour_public.parlourRole as enum (
+  'member',
+  'owner',
+  'moderator'
+);
+
+drop table if exists parlour_public.parlour_user;
+create table parlour_public.parlour_user (
+  parlour_uid uuid not null references parlour_public.parlour(uid),
+  user_uid uuid not null references parlour_public.users(uid),
+  user_role parlourRole not null
+);
+create index on parlour_public.parlour_user(parlour_uid);
+create index on parlour_public.parlour_user(user_uid);
+
+comment on column parlour_public.parlour_user.user_uid is 'The uid of the member (user) belonging to parlour';
+comment on column parlour_public.parlour_user.parlour_uid is 'The uid of the parlour';
+comment on column parlour_public.parlour_user.user_role is 'User''s role in the parlour';
+
+grant select on table parlour_public.parlour_user to parlour_user;
+
+alter table parlour_public.parlour_user enable row level security;
+create policy parlour_user_policy on parlour_user 
+  using (user_uid = get_current_user());
 
 -- Authentication
 drop type if exists parlour_public.identityProvider cascade;
@@ -127,8 +159,8 @@ comment on column parlour_private.account.idp is 'Identity provider for this acc
 comment on column parlour_private.account.id_token is 'ID token for OpenID Connect';
 comment on column parlour_private.account.idp_id is 'External account identifier in idp';
 
-drop function if exists parlour_public.register_user;
-create function parlour_public.register_user(
+drop function if exists parlour_private.register_user;
+create function parlour_private.register_user(
 	username text,
 	last_name text,
 	first_name text,
@@ -153,17 +185,9 @@ begin
 end;
 $$ language plpgsql volatile security definer ;
 
-comment on function parlour_public.register_user
+grant execute on function parlour_private.register_user(text, text, text, text, boolean, text, text, parlour_public.identityProvider, text) to parlour_postgraphile;
+comment on function parlour_private.register_user
 	(text, text, text, text, boolean, text, text, parlour_public.identityProvider, text) is 'Register a single user and creates an account';
-
-grant execute on function parlour_public.register_user(text, text, text, text, boolean, text, text, parlour_public.identityProvider, text) to parlour_anonymous;
-
-drop type if exists parlour_public.jwt_token cascade;
-create type parlour_public.jwt_token as (
-	role text,
-	user_uid uuid,
-	exp bigint
-);
 
 drop function if exists parlour_private.login_user;
 create function parlour_private.login_user(
@@ -198,7 +222,7 @@ create table parlour_private.login_session (
   expire timestamptz NOT NULL
 );
 create index ON parlour_private.login_session(expire);
-grant all on table parlour_private.login_session to parlour_root;
+grant all on table parlour_private.login_session to parlour_admin;
 
 drop trigger if exists login_session_updated_at on parlour_private.login_session;
 create trigger login_session_updated_at before update

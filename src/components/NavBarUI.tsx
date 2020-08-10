@@ -7,6 +7,8 @@ import { signoutIdp } from "../store/actions";
 import RoutedButton from "./RoutedButton";
 import { User } from "../common/types";
 import { auth } from "./Auth";
+import { useGoogleLogout } from "react-google-login";
+import * as config from "../common/client_config";
 
 interface UserMenuProps {
   logout: () => void;
@@ -33,9 +35,16 @@ export const NavBarUI: React.FC = () => {
   const dispatch = useDispatch();
   const user: User = useSelector((state: RootState) => state.user);
   const isSignedIn = user.isSignedIn;
+  const { signOut } = useGoogleLogout({
+    clientId: config.googleConfig.clientId,
+    // onLogoutSuccess: ,
+  });
 
   const logout = () => {
-    auth.logOut(() => dispatch(signoutIdp()));
+    auth.logOut(() => {
+      signOut();
+      dispatch(signoutIdp());
+    });
   };
 
   return (

@@ -1,7 +1,7 @@
 import ConnectPgSimple from "connect-pg-simple";
 // import * as express from "express";
 import session from "express-session";
-import { getParlourRootDbPool } from "./parlour_db";
+import { getParlourDbPool } from "./parlour_db";
 import { Pool } from "pg";
 import { logger } from "../common/logger";
 import { IncomingMessage } from "http";
@@ -26,7 +26,8 @@ if (!DB_POSTGRAPHILE_USER) {
 export let MAXIMUM_SESSION_DURATION_IN_MILLISECONDS =
   parseInt(process.env.MAXIMUM_SESSION_DURATION_IN_MILLISECONDS, 10) || 3 * DAY;
 
-const pgPool = getParlourRootDbPool();
+// const pgPool = getParlourRootDbPool();
+const pgPool = getParlourDbPool("parlour_admin");
 
 if (process.env.NODE_ENV === "test") {
   MAXIMUM_SESSION_DURATION_IN_MILLISECONDS = 5000;
@@ -123,7 +124,7 @@ export const sessions = session({
 export const findSession = async (sid: string): Promise<ParlourSession> => {
   logger.silly(`searching for session sid: ${sid}`);
   return new Promise((resolve, reject) => {
-    getParlourRootDbPool()
+    pgPool
       .query(
         "select extract('epoch' from expire) * 1000 as expire_epoch, * from parlour_private.login_session where sid = $1",
         [sid]
