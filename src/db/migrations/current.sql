@@ -6,9 +6,9 @@ create extension if not exists "pgcrypto";
 create extension if not exists "citext";
 
 -- grants
-alter default privileges revoke execute on functions from public;
-grant usage on schema parlour_public to parlour_anonymous, parlour_user, parlour_postgraphile, parlour_admin;
-grant usage on schema parlour_private to parlour_admin;
+alter default privileges revoke execute on functions from public, parlour_anonymous, parlour_user;
+grant usage on schema parlour_public to parlour_anonymous, parlour_user, parlour_postgraphile, parlour_admin, parlour_root;
+grant usage on schema parlour_private to parlour_admin, parlour_root, parlour_postgraphile;
 
 drop function if exists parlour_public.set_updated_at cascade;
 create or replace function parlour_private.set_updated_at() returns trigger as $$
@@ -22,7 +22,7 @@ drop function if exists parlour_public.get_current_user() cascade;
 create or replace function parlour_public.get_current_user() returns uuid as $$
   select current_setting('parlour.user.uid', true)::uuid;
 $$ language sql stable;
-grant execute on function parlour_public.get_current_user() to parlour_user;
+grant execute on function parlour_public.get_current_user() to parlour_user, parlour_postgraphile;
 
 -- User stuff
 drop table if exists parlour_public.users cascade;
@@ -55,8 +55,13 @@ comment on column parlour_public.users.updated_at is 'Time this user was last up
 comment on column parlour_public.users.recent_login is 'Last time user was seen';
 
 alter table parlour_public.users enable row level security;
-create policy user_policy on users 
+drop policy if exists user_policy on users;
+create policy user_policy on users to parlour_user
   using (uid = get_current_user());
+
+drop policy if exists admin_user_policy on users;
+create policy admin_user_policy on users to parlour_admin, parlour_root
+  using (true);
 
 grant select on table parlour_public.users to parlour_user;
 
@@ -222,10 +227,16 @@ create table parlour_private.login_session (
   expire timestamptz NOT NULL
 );
 create index ON parlour_private.login_session(expire);
-grant all on table parlour_private.login_session to parlour_admin;
 
 drop trigger if exists login_session_updated_at on parlour_private.login_session;
 create trigger login_session_updated_at before update
 	on parlour_private.login_session 
 	for each row
 	execute procedure parlour_private.set_updated_at();
+
+  -- this might need to be on the bottom of all migrations...
+  grant all on all tables in schema parlour_public TO parlour_root, parlour_admin ;
+  grant all on all tables in schema parlour_private TO parlour_root, parlour_admin ;
+  grant all on all functions in schema parlour_private TO parlour_root, parlour_admin ;
+  grant all on all functions in schema parlour_public TO parlour_root, parlour_admin ;
+  

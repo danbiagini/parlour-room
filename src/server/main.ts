@@ -37,6 +37,8 @@ app.use("/api", api);
 const auth = (req: Request, res: Response, next: Function) => {
   if (!req.session.user_id) {
     logger.info("auth failed, no logged in user_id on session");
+    // when / if we want to support anonymous users it will probably be something like this:
+    // req.session.role = process.env.DB_ANON_USER;
     return res.sendStatus(401);
   }
 

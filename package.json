@@ -17,7 +17,7 @@
     "dev": "concurrently \"npm:dev:server\" \"npm:test:watch\" \"npm:dev:client\"",
     "test": "jest",
     "test:watch": "npm test -- --watch",
-    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "test:debug": "echo 'to debug a test, add a ''debugger'' line to the test'; node --inspect-brk node_modules/.bin/jest --runInBand",
     "start": "node --require dotenv/config .",
     "sec2env": "ts-node tools/gcpSecrets",
     "client-package": "parcel build src/index.html --out-dir dist/public/",

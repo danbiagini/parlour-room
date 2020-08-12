@@ -18,7 +18,7 @@ const r1 = readline.createInterface({
   output: process.stdout,
 });
 
-const database_url = process.env.TEST_DATABASE_URL;
+const database_url = process.env.ROOT_DATABASE_URL;
 r1.question(
   `Are you sure you want to reset the databse at ${database_url} [y|n]? `,
   (yes) => {

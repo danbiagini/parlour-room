@@ -65,8 +65,8 @@ export const getParlourDbPool = (role?: string) => {
   return poolFromUrl(PARLOUR_DB, role);
 };
 
-export const getParlourRootDbPool = () => {
-  return poolFromUrl(PARLOUR_ROOT_URL);
+export const getParlourRootDbPool = (role?: string) => {
+  return poolFromUrl(PARLOUR_ROOT_URL, role);
 };
 
 // export const coerceDateFromPgTimestamp = (stamp: string): Date => {

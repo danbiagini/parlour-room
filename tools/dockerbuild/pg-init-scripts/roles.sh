@@ -2,9 +2,9 @@ function create_roles() {
   DBURL=$1
 	echo " Creating roles for pandemic parlour, database: $DBURL "
 	psql -v ON_ERROR_STOP=1 "$DBURL" <<-EOSQL
-    -- server
+    -- server, noinherit makes the server explicitly set role for object access 
 		drop role if exists parlour_postgraphile;
-		create role parlour_postgraphile login password '$POSTGRAPHILE_PASSWORD';
+		create role parlour_postgraphile login password '$POSTGRAPHILE_PASSWORD' noinherit;
     GRANT TEMPORARY, CONNECT ON DATABASE parlour to parlour_postgraphile;
 
     -- not logged in 

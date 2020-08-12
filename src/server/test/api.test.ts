@@ -133,7 +133,8 @@ describe("Auth login API", () => {
   });
 
   it("returns 200 on valid user", async () => {
-    const signedInUser = testCreatedUsers[0];
+    let signedInUser: User;
+    signedInUser = Object.assign({}, testCreatedUsers[0]);
     signedInUser.isSignedIn = true;
     mockedGetPayload.mockReturnValueOnce(validToken(signedInUser));
     const myTicket: LoginTicket = new LoginTicket();
@@ -474,7 +475,7 @@ describe("Graphql queries", () => {
     done();
   });
 
-  it("returns 200 on basic query w/ auth", async (done) => {
+  it("returns 200 logged in user object only on basic query w/ auth", async (done) => {
     const u = testCreatedUsers[0];
     await login(app, u);
 
@@ -501,6 +502,21 @@ describe("Graphql queries", () => {
       });
     done();
   });
+
+  // it("returns 200 all user objects on users query w/ admin auth", async (done) => {
+  //   const u = testCreatedUsers[0];
+  //   await login(app, u);
+
+  //   await request(app)
+  //     .post("/graphql")
+  //     .set("cookie", cookieJar.get())
+  //     .send(graphqlAllUsers)
+  //     .expect(200)
+  //     .expect((res) => {
+  //       expect(res.body.data.users.nodes.length()).toEqual(10);
+  //     });
+  //   done();
+  // });
 
   // it("returns 200 on whoami w/ auth", async (done) => {
   //   const u = testCreatedUsers[0];

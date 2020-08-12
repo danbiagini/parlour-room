@@ -77,6 +77,7 @@ export interface IRequestSession extends IncomingMessage {
   session: {
     user_id: string;
     cookie: string;
+    role: string;
   };
 }
 

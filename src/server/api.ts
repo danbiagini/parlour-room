@@ -92,6 +92,7 @@ api.get("/auth/:idp/login", async (req, res) => {
       }
 
       req.session.user_id = user.uid;
+      req.session.role = process.env.DB_SIGNEDIN_USER;
       return res.json(user);
     })
     .catch((err) => {
@@ -132,6 +133,7 @@ api.post("/auth/:idp/register", async (req, res) => {
       logger.debug("created new user: " + JSON.stringify(user));
       user.isSignedIn = true;
       req.session.user_id = user.uid;
+      req.session.role = process.env.DB_SIGNEDIN_USER;
       return res.json(user);
     })
     .catch((err) => {

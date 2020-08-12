@@ -1,5 +1,9 @@
 import * as types from "../../common/types";
-import { poolFromUrl, regUser } from "../../server/parlour_db";
+import {
+  poolFromUrl,
+  regUser,
+  getParlourRootDbPool,
+} from "../../server/parlour_db";
 import { logger } from "../../common/logger";
 
 /*
@@ -32,7 +36,8 @@ if (!process.env.TEST_DATABASE_URL) {
 }
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 export const DB_ANON_USER = process.env.DB_ANON_USER;
-export const DB_ROOT_USER = process.env.DB_POSTGRAHILE_USER;
+export const DB_ROOT_USER = process.env.DB_PARLOUR_ROOT_USER;
+export const DB_ADMIN_USER = process.env.DB_ADMIN_USER;
 
 export const testUser: types.User = {
   isSignedIn: false,
@@ -48,7 +53,7 @@ export const testUser: types.User = {
 
 export const cleanTestDb = async () => {
   logger.debug("cleanTestDb - beginning database cleanup");
-  const p = await poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER);
+  const p = await getParlourRootDbPool();
   try {
     await p.query("delete from parlour_public.users");
     await p.query("delete from parlour_public.parlour");
@@ -61,10 +66,9 @@ export const cleanTestDb = async () => {
 
 export const deleteTestUsers = async () => {
   let dels: Promise<QueryResult>[] = [];
-  logger.debug(`deleting test users from ${TEST_DATABASE_URL}`);
   try {
-    const p = poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER);
-    // const c = await p.connect();
+    const p = getParlourRootDbPool();
+    logger.debug(`deleting test users`);
     testCreatedUsers.forEach((u) => {
       dels.push(
         p.query("delete from parlour_public.users where username = $1", [
@@ -87,32 +91,25 @@ export const deleteTestUsers = async () => {
   }
 };
 
-const deleteDataById = async (id: string) => {
-  let statements: Promise<QueryResult>[] = [];
-  const p = poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER);
-  statements.push(
-    p.query(
-      "delete from parlour_public.users where username like '%' || $1 || '%'",
-      [id]
-    )
+const deleteDataById = (id: string) => {
+  console.log("deleting test data with id:" + id);
+  const p = getParlourRootDbPool();
+  return p.query(
+    "delete from parlour_public.users where username like '%' || $1 || '%'",
+    [id]
   );
-  return await Promise.all(statements).catch((err) => {
-    console.log("error deleting by id:" + err);
-  });
 };
 
 export const deleteTestData = async (dataId?: string) => {
-  try {
-    let dels: Promise<any>[] = [];
-    dels.push(deleteTestUsers());
-    if (dataId) {
-      dels.push(deleteDataById(dataId));
-    }
-    return await Promise.all(dels);
-  } catch (e) {
-    console.error("unable to delete all test data, exception:", e);
-    throw e;
+  console.log("deleting test data");
+  let dels: Promise<any>[] = [];
+  dels.push(deleteTestUsers());
+  if (dataId) {
+    dels.push(deleteDataById(dataId));
   }
+  return await Promise.all(dels).catch((err) => {
+    console.log("error deleting data: " + err);
+  });
 };
 
 export let userCreationCounter = 0;
@@ -152,11 +149,11 @@ export const createUsers = async (
         }
       });
   }
-  const client = await poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER).connect();
+  const client = await poolFromUrl(TEST_DATABASE_URL, DB_ADMIN_USER).connect();
   await client
-    .query("select count(*) from parlour_public.users")
+    .query("select count(*) as count from parlour_public.users")
     .then((res) => {
-      logger.debug("createdUsers results: " + res.rows[0][0]);
+      logger.debug("createdUsers results: " + res.rows[0][count]);
     });
   client.release();
 };

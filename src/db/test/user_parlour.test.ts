@@ -1,9 +1,14 @@
+// eslint-disable-next-line no-debugger
+debugger;
+
 import { User, IDP } from "../../common/types";
 import {
   loginUser,
   poolFromUrl,
   cleanPools,
   regUser,
+  getParlourDbPool,
+  getParlourRootDbPool,
 } from "../../server/parlour_db";
 import {
   testUser,
@@ -15,6 +20,7 @@ import {
 
 const testId = "user-parlour.test";
 console.log("testing with testId:" + testId);
+
 afterAll(async () => {
   await deleteTestData(testId);
   await cleanPools();
@@ -25,7 +31,7 @@ beforeAll(async () => {
   await createUsers(1, testId, IDP.GOOGLE);
 });
 
-describe("utility functionds", () => {
+describe("utility functions", () => {
   it("can coerce pgtime w/ no time zone to Date", async (done) => {
     expect.hasAssertions();
     poolFromUrl(TEST_DATABASE_URL, process.env.DB_ANON_USER).query(
@@ -66,7 +72,7 @@ describe("utility functionds", () => {
 });
 
 describe("grant restrictions on mutations ", () => {
-  it("cannot manually insert a user", async () => {
+  it("anon cannot manually insert a user", async (done) => {
     const client = await poolFromUrl(
       TEST_DATABASE_URL,
       process.env.DB_ANON_USER
@@ -74,27 +80,63 @@ describe("grant restrictions on mutations ", () => {
     await expect(
       client.query(
         `insert into parlour_public.users (username, first_name, about) 
-		values ('test123', 'Test', 'Once upon a test')`
+		values ('test123@${testId}', 'Test', 'Once upon a test')`
       )
     ).rejects.toThrow("permission denied for table user");
     client.release();
+    done();
   });
 
-  it("can check the time", async () => {
+  it("signedin_user cannot manually insert a user", async (done) => {
     const client = await poolFromUrl(
       TEST_DATABASE_URL,
-      process.env.DB_ANON_USER
+      process.env.DB_SIGNEDIN_USER
     ).connect();
-    expect((await client.query("select now()")).rowCount).toEqual(1);
+    await expect(
+      client.query(
+        `insert into parlour_public.users (username, first_name, about) 
+		values ('test123@${testId}', 'Test', 'Once upon a test')`
+      )
+    ).rejects.toThrow("permission denied for table user");
     client.release();
+    done();
   });
 
-  it("can login new user", async () => {
+  it("postgraphile cannot manually insert a user", async (done) => {
+    expect.hasAssertions();
+    const p = getParlourDbPool();
+    await expect(
+      p.query(
+        `insert into parlour_public.users (username, first_name, about) 
+		          values ('test123@${testId}', 'Test', 'Once upon a test')`
+      )
+    ).rejects.toThrow("permission denied for table user");
+    done();
+  });
+
+  it("admin can manually insert a user", async (done) => {
+    expect.hasAssertions();
+    const p = getParlourRootDbPool(process.env.DB_ADMIN_USER);
+    console.log("starting admin insert");
+    await p
+      .query(
+        `insert into parlour_public.users (username, first_name, about) 
+		          values ('admin-insert@${testId}', 'Test', 'Once upon a test')`
+      )
+      .then((res) => {
+        console.log("done with admin insert");
+        expect(res.rowCount).toBe(1);
+      });
+    done();
+  });
+
+  it("postgraphile can login new user", async (done) => {
     let u1 = testCreatedUsers[0];
     let u2: User = Object.assign({}, u1);
     u2.isSignedIn = true;
     expect.assertions(1);
     await expect(loginUser(IDP.GOOGLE, u1.idpId)).resolves.toMatchObject(u2);
+    done();
   });
 
   it("login fails on invalid idp_id new user", async () => {
@@ -177,7 +219,7 @@ describe("register new user", () => {
   it("can register a new user", async () => {
     let u1: User = Object.assign({}, testUser);
     u1.isSignedIn = false;
-    u1.username = "success-" + testUser.username;
+    u1.username = "success-" + testUser.username + `-${testId}`;
     expect.assertions(1);
     await expect(regUser(u1)).resolves.toMatchObject(u1);
     testCreatedUsers.push(u1);

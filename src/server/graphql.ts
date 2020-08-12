@@ -3,10 +3,18 @@ import { IRequestSession } from "./sessions";
 import { postgraphile, PostGraphileOptions } from "postgraphile";
 import { getParlourDbPool } from "./parlour_db";
 
-const { DB_POSTGRAPHILE_USER } = process.env;
+const { DB_POSTGRAPHILE_USER, DB_ANON_USER, DB_SIGNEDIN_USER } = process.env;
 
 if (!DB_POSTGRAPHILE_USER) {
   throw new Error("graphql init error, no DB_POSTGRAPHILE_USER set");
+}
+
+if (!DB_ANON_USER) {
+  throw new Error("graphql init error, no anonymous user set");
+}
+
+if (!DB_SIGNEDIN_USER) {
+  throw new Error("graphql init error, no signed in user set");
 }
 
 export const graphql = express.Router();
@@ -28,18 +36,20 @@ const graphqlOptions: PostGraphileOptions = {
   // },
   pgSettings: async (request: IRequestSession) => ({
     "parlour.user.uid": `${request.session.user_id}`,
+    // eslint-disable-next-line prettier/prettier
+    "role": `${request.session.role}`,
   }),
 };
 
 if (process.env.NODE_ENV !== "production") {
   const graphqlDevOptions = {
     // Customizations
-    ownerConnectionString: process.env.DATABASE_URL,
+    ownerConnectionString: process.env.ROOT_DATABASE_URL,
 
     // Recommended options from https://www.graphile.org/postgraphile/usage-library/#for-development
     subscriptions: true,
     watchPg: true,
-    showErrorStack: "json",
+    showErrorStack: true,
     extendedErrors: [
       "hint",
       "detail",
