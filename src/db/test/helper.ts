@@ -3,6 +3,7 @@ import {
   poolFromUrl,
   regUser,
   getParlourRootDbPool,
+  deserializeParlour,
 } from "../../server/parlour_db";
 import { logger } from "../../common/logger";
 
@@ -56,6 +57,7 @@ export const cleanTestDb = async () => {
   const p = await getParlourRootDbPool();
   try {
     await p.query("delete from parlour_public.users");
+    await p.query("delete from parlour_public.parlour_user");
     await p.query("delete from parlour_public.parlour");
     await p.query("delete from parlour_private.account");
     await p.query("delete from parlour_private.login_session");
@@ -85,19 +87,43 @@ export const deleteTestUsers = async () => {
         testUser.username,
       ])
     );
+    userCreationCounter = 0;
+    testCreatedUsers.length = 0;
     return await Promise.all(dels);
   } catch (e) {
     console.error("error deleteTestUsers:", e);
   }
 };
 
+export const deleteTestParlours = async () => {
+  const deletes: Promise<QueryResult>[] = [];
+  const pool = getParlourRootDbPool();
+  testParlours.forEach((p) => {
+    deletes.push(
+      pool.query("delete from parlour_public.parlour where uid = $1", [p.uid])
+    );
+  });
+  return Promise.all(deletes);
+};
+
 const deleteDataById = (id: string) => {
   console.log("deleting test data with id:" + id);
+  const deletes: Promise<QueryResult>[] = [];
+
   const p = getParlourRootDbPool();
-  return p.query(
-    "delete from parlour_public.users where username like '%' || $1 || '%'",
-    [id]
+  deletes.push(
+    p.query(
+      "delete from parlour_public.users where username like '%' || $1 || '%'",
+      [id]
+    )
   );
+  deletes.push(
+    p.query(
+      "delete from parlour_public.parlour where name like '%_id:' || $1 || '%'",
+      [id]
+    )
+  );
+  return Promise.all(deletes);
 };
 
 export const deleteTestData = async (dataId?: string) => {
@@ -112,6 +138,77 @@ export const deleteTestData = async (dataId?: string) => {
   });
 };
 
+export const testParlours: types.Parlour[] = [];
+export const createParlours = async (
+  count: number = 1,
+  base: string = "default",
+  creatorTestUserIdx = 0,
+  creatorUid?: string
+) => {
+  if (!creatorUid) {
+    console.log(
+      `creating parlours using idx ${creatorTestUserIdx}, uid ${testCreatedUsers[creatorTestUserIdx].uid}, 
+      and createduser length ${testCreatedUsers.length} `
+    );
+    creatorUid = testCreatedUsers[creatorTestUserIdx].uid;
+  }
+
+  const inserts = [];
+  for (let i = 0; i < count; i++) {
+    const parlourLetter = "abcdefghijklmnopqrstuvwxyz"[i];
+    const p: types.Parlour = {
+      description: parlourLetter.repeat(10),
+      name: parlourLetter + `_id:${base}`,
+      creator_uid: creatorUid,
+    };
+    const pool = getParlourRootDbPool();
+    inserts.push(
+      pool
+        .query(
+          `insert into parlour_public.parlour(description, name, creator_uid) values ($1, $2, $3) 
+          returning (uid, name, description, creator_uid)`,
+          [p.description, p.name, p.creator_uid]
+        )
+        .then((result) => {
+          const p = deserializeParlour(result.rows[0]);
+          testParlours.push(p);
+          console.log("created parlour: " + p);
+        })
+        .catch((err) =>
+          console.log(
+            `creating parlour (${p.description}, ${p.name}, ${p.creator_uid}) failed, err: ` +
+              err
+          )
+        )
+    );
+  }
+  await Promise.all(inserts);
+  return new Promise((resolve, reject) => {
+    poolFromUrl(TEST_DATABASE_URL, DB_ADMIN_USER)
+      .connect()
+      .then((client) => {
+        client
+          .query(
+            "select count(*) as count from parlour_public.parlour where name like '%_id:' || $1 || '%'",
+            [base]
+          )
+          .then((res) => {
+            logger.debug("createParlours results: " + res.rows[0]["count"]);
+            resolve(parseInt(res.rows[0]["count"]));
+          })
+          .catch((err) => {
+            console.log("error searching for createdParlours: " + err);
+            reject(err);
+          })
+          .finally(() => client.release());
+      })
+      .catch((err) => {
+        console.log("error connecting to pool: " + err);
+        reject(err);
+      });
+  });
+};
+
 export let userCreationCounter = 0;
 export const testCreatedUsers: types.User[] = [];
 
@@ -119,9 +216,10 @@ export const createUsers = async (
   count: number = 1,
   base: string = "d.jb",
   idp: types.IDP = types.IDP.GOOGLE
-) => {
+): Promise<number> => {
+  let offset = userCreationCounter;
   for (let i = 0; i < count; i++) {
-    const userLetter = "abcdefghijklmnopqrstuvwxyz"[i];
+    const userLetter = "abcdefghijklmnopqrstuvwxyz"[(offset + i) % 26];
     const email = userLetter + i + "@" + base;
     const u: types.User = {
       email: email,
@@ -135,27 +233,37 @@ export const createUsers = async (
     };
     await regUser(u)
       .then((user) => {
-        userCreationCounter++;
         testCreatedUsers.push(user);
+        userCreationCounter++;
       })
       .catch((err) => {
-        let eStr: String = new String(err);
-        if (eStr.includes("duplicate key value violates unique constraint")) {
-          // user already existed, role with it...
-          userCreationCounter++;
-          testCreatedUsers.push(u);
-        } else {
-          logger.error(`error creating user for tests: ${err}`);
-        }
+        logger.error(`error creating user for tests: ${err}`);
       });
   }
-  const client = await poolFromUrl(TEST_DATABASE_URL, DB_ADMIN_USER).connect();
-  await client
-    .query("select count(*) as count from parlour_public.users")
-    .then((res) => {
-      logger.debug("createdUsers results: " + res.rows[0][count]);
-    });
-  client.release();
+  return new Promise((resolve, reject) => {
+    poolFromUrl(TEST_DATABASE_URL, DB_ADMIN_USER)
+      .connect()
+      .then((client) => {
+        client
+          .query(
+            "select count(*) as count from parlour_public.users where email like '%' || $1 || '%'",
+            [base]
+          )
+          .then((res) => {
+            logger.debug("createdUsers results: " + res.rows[0]["count"]);
+            resolve(parseInt(res.rows[0]["count"]));
+          })
+          .catch((err) => {
+            console.log("error searching for createdUsers: " + err);
+            reject(err);
+          })
+          .finally(() => client.release());
+      })
+      .catch((err) => {
+        console.log("error connecting to pool: " + err);
+        reject(err);
+      });
+  });
 };
 
 // best intentions, turns out this isn't really that usable

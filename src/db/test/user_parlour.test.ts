@@ -16,19 +16,31 @@ import {
   deleteTestData,
   createUsers,
   testCreatedUsers,
+  createParlours,
 } from "./helper";
 
 const testId = "user-parlour.test";
 console.log("testing with testId:" + testId);
 
-afterAll(async () => {
-  await deleteTestData(testId);
+afterAll(async (done) => {
+  // await deleteTestData(testId);
   await cleanPools();
+  done();
 });
 
-beforeAll(async () => {
-  await deleteTestData(testId);
+beforeEach(async (done) => {
   await createUsers(1, testId, IDP.GOOGLE);
+  done();
+});
+
+afterEach(async (done) => {
+  await deleteTestData(testId);
+  done();
+});
+
+beforeAll(async (done) => {
+  await deleteTestData(testId);
+  done();
 });
 
 describe("utility functions", () => {
@@ -87,6 +99,19 @@ describe("grant restrictions on mutations ", () => {
     done();
   });
 
+  it("anon cannot manually insert a parlour", async (done) => {
+    expect.hasAssertions();
+    await poolFromUrl(TEST_DATABASE_URL, process.env.DB_ANON_USER)
+      .query(
+        `insert into parlour_public.parlour (name, creator_uid, description) 
+		values ('test123@${testId}', '${testCreatedUsers[0].uid}', 'Once upon a test')`
+      )
+      .catch((err) => {
+        expect(err).toEqual(new Error("permission denied for table parlour"));
+      });
+    done();
+  });
+
   it("signedin_user cannot manually insert a user", async (done) => {
     const client = await poolFromUrl(
       TEST_DATABASE_URL,
@@ -102,6 +127,19 @@ describe("grant restrictions on mutations ", () => {
     done();
   });
 
+  it("signedin_user cannot manually insert a parlour", async (done) => {
+    expect.hasAssertions();
+    await poolFromUrl(TEST_DATABASE_URL, process.env.DB_SIGNEDIN_USER)
+      .query(
+        `insert into parlour_public.parlour (name, creator_uid, description) 
+		values ('test123@${testId}', '${testCreatedUsers[0].uid}', 'Once upon a test')`
+      )
+      .catch((err) => {
+        expect(err).toEqual(new Error("permission denied for table parlour"));
+      });
+    done();
+  });
+
   it("postgraphile cannot manually insert a user", async (done) => {
     expect.hasAssertions();
     const p = getParlourDbPool();
@@ -114,17 +152,42 @@ describe("grant restrictions on mutations ", () => {
     done();
   });
 
+  it("postgraphile cannot manually insert a parlour", async (done) => {
+    expect.hasAssertions();
+    await getParlourDbPool()
+      .query(
+        `insert into parlour_public.parlour (name, creator_uid, description) 
+		values ('test123@${testId}', '${testCreatedUsers[0].uid}', 'Once upon a test')`
+      )
+      .catch((err) => {
+        expect(err).toEqual(new Error("permission denied for table parlour"));
+      });
+    done();
+  });
+
   it("admin can manually insert a user", async (done) => {
     expect.hasAssertions();
     const p = getParlourRootDbPool(process.env.DB_ADMIN_USER);
-    console.log("starting admin insert");
     await p
       .query(
         `insert into parlour_public.users (username, first_name, about) 
 		          values ('admin-insert@${testId}', 'Test', 'Once upon a test')`
       )
       .then((res) => {
-        console.log("done with admin insert");
+        expect(res.rowCount).toBe(1);
+      });
+    done();
+  });
+
+  it("admin can manually insert a parlour", async (done) => {
+    expect.hasAssertions();
+    const p = getParlourRootDbPool(process.env.DB_ADMIN_USER);
+    await p
+      .query(
+        `insert into parlour_public.parlour (name, creator_uid, description) 
+		values ('test123@${testId}', '${testCreatedUsers[0].uid}', 'Once upon a test')`
+      )
+      .then((res) => {
         expect(res.rowCount).toBe(1);
       });
     done();
@@ -145,11 +208,63 @@ describe("grant restrictions on mutations ", () => {
       "idp_id not found"
     );
   });
+
+  it("user can query for their parlours", async (done) => {
+    await createUsers(2, testId);
+    await createParlours(2, testId, 1);
+    await createParlours(2, testId, 0);
+
+    const result = await poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_SIGNEDIN_USER,
+      testCreatedUsers[1].uid
+    ).query(
+      `select pu.* from parlour_public.parlour_user as pu inner join parlour_public.parlour as p
+        on p.uid = pu.parlour_uid`
+    );
+    expect(result.rows.length).toEqual(2);
+    expect(result.rows[0]["user_uid"]).toEqual(testCreatedUsers[1].uid);
+    expect(result.rows[1]["user_uid"]).toEqual(testCreatedUsers[1].uid);
+    done();
+  });
+
+  it("can assume admin role", async (done) => {
+    const pool = poolFromUrl(TEST_DATABASE_URL, process.env.DB_ADMIN_USER);
+    expect.hasAssertions();
+    await pool.query("show role").then((res) => {
+      expect(res.rows[0].role).toEqual("parlour_admin");
+    });
+    done();
+  });
+
+  it("admin can query for all parlours", async (done) => {
+    const userCount = await createUsers(2, testId);
+    expect(userCount).toEqual(3); // 1 user is created in beforeEach
+
+    await createParlours(2, testId, 1);
+
+    const parlourCount = await createParlours(1, testId, 0);
+    expect(parlourCount).toBe(3);
+
+    const result = await poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_ADMIN_USER
+    ).query(
+      `select pu.* from parlour_public.parlour_user as pu inner join parlour_public.parlour as p
+        on p.uid = pu.parlour_uid where p.name like '%${testId}%' 
+        order by pu.created_at desc`
+    );
+    expect(result.rows.length).toEqual(3);
+    expect(result.rows[0]["user_uid"]).toEqual(testCreatedUsers[0].uid);
+    expect(result.rows[1]["user_uid"]).toEqual(testCreatedUsers[1].uid);
+    expect(result.rows[2]["user_uid"]).toEqual(testCreatedUsers[1].uid);
+    done();
+  });
 });
 
 describe("register new user", () => {
   it("error on new user already exists", async () => {
-    createUsers(1, IDP.GOOGLE);
+    // createUsers(1, IDP.GOOGLE);
     let u1 = testCreatedUsers[0];
     expect.assertions(1);
     await expect(regUser(u1)).rejects.toThrow(

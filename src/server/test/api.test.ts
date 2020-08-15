@@ -166,8 +166,8 @@ describe("Auth login API", () => {
       Date.now() + MAXIMUM_SESSION_DURATION_IN_MILLISECONDS
     );
     expect(expires.valueOf()).toBeWithin(
-      target.valueOf() - 1000,
-      target.valueOf() + 1000
+      target.valueOf() - 5000,
+      target.valueOf() + 5000
     );
     expect(expires.valueOf()).toBeGreaterThanOrEqual(target.valueOf());
     expect(s.sess.user_id).toEqual(signedInUser.uid);

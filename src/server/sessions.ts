@@ -1,5 +1,4 @@
 import ConnectPgSimple from "connect-pg-simple";
-// import * as express from "express";
 import session from "express-session";
 import { getParlourDbPool } from "./parlour_db";
 import { Pool } from "pg";
@@ -26,7 +25,6 @@ if (!DB_POSTGRAPHILE_USER) {
 export let MAXIMUM_SESSION_DURATION_IN_MILLISECONDS =
   parseInt(process.env.MAXIMUM_SESSION_DURATION_IN_MILLISECONDS, 10) || 3 * DAY;
 
-// const pgPool = getParlourRootDbPool();
 const pgPool = getParlourDbPool("parlour_admin");
 
 if (process.env.NODE_ENV === "test") {
@@ -91,10 +89,6 @@ export interface ParlourSession {
   updated_at: Date;
   created_at: Date;
 }
-
-// export interface ISessionRequest extends Express.Request {
-//   session: ParlourSession;
-// }
 
 export const nullSession: Readonly<ParlourSession> = {
   sid: undefined,

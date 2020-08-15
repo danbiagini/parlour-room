@@ -94,22 +94,38 @@ drop table if exists parlour_public.parlour cascade;
 create table parlour_public.parlour (
 	uid uuid primary key default gen_random_uuid(),
 	name text not null,
-	owner_uid uuid not null references parlour_public.users(uid),
+	creator_uid uuid not null references parlour_public.users(uid) on delete cascade,
 	description text,
 	created_at timestamptz not null default now(),
-	updated_at timestamptz not null default now()
+	updated_at timestamptz not null default now(),
+  constraint creator_name unique (creator_uid, name)
 );
-create index on parlour_public.parlour(owner_uid);
+create index on parlour_public.parlour(creator_uid);
 
 comment on table parlour_public.parlour is 'A parlour owned by a uesr that others can join';
 comment on column parlour_public.parlour.uid is 'System generated parlour uid';
 comment on column parlour_public.parlour.name is 'Name for the parlour';
-comment on column parlour_public.parlour.owner_uid is 'The uid of the owner user';
+comment on column parlour_public.parlour.creator_uid is 'The uid of the user who created the parlour';
 comment on column parlour_public.parlour.description is 'Description of the parlour';
 comment on column parlour_public.parlour.created_at is 'Time this parlour was created';
 comment on column parlour_public.parlour.updated_at is 'Time this parlour was last updated';
 
 grant select on table parlour_public.parlour to parlour_user;
+
+drop function if exists parlour_private.add_parlour_member;
+create function parlour_private.add_parlour_member() returns trigger as $$
+begin
+  insert into parlour_public.parlour_user(parlour_uid, user_uid, user_role) 
+    values (NEW.uid, NEW.creator_uid, 'owner'::parlour_public.parlourRole);
+  return null;
+end
+$$ language plpgsql;
+
+drop trigger if exists parlour_created on parlour_public.parlour;
+create trigger parlour_created after insert 
+	on parlour_public.parlour 
+	for each row
+	execute procedure parlour_private.add_parlour_member();
 
 drop trigger if exists parlour_updated_at on parlour_public.parlour;
 create trigger parlour_updated_at before update
@@ -126,9 +142,11 @@ create type parlour_public.parlourRole as enum (
 
 drop table if exists parlour_public.parlour_user;
 create table parlour_public.parlour_user (
-  parlour_uid uuid not null references parlour_public.parlour(uid),
-  user_uid uuid not null references parlour_public.users(uid),
-  user_role parlourRole not null
+  parlour_uid uuid not null references parlour_public.parlour(uid) on delete cascade,
+  user_uid uuid not null references parlour_public.users(uid) on delete cascade,
+  user_role parlourRole not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 create index on parlour_public.parlour_user(parlour_uid);
 create index on parlour_public.parlour_user(user_uid);
@@ -136,12 +154,26 @@ create index on parlour_public.parlour_user(user_uid);
 comment on column parlour_public.parlour_user.user_uid is 'The uid of the member (user) belonging to parlour';
 comment on column parlour_public.parlour_user.parlour_uid is 'The uid of the parlour';
 comment on column parlour_public.parlour_user.user_role is 'User''s role in the parlour';
+comment on column parlour_public.parlour_user.created_at is 'Time this parlour membership was created';
+comment on column parlour_public.parlour_user.updated_at is 'Time this parlour membership was last updated';
 
 grant select on table parlour_public.parlour_user to parlour_user;
 
+-- TODO: This policy only allows checking membership for the logged in user, 
+--   it doesn't support finding other parlour members
 alter table parlour_public.parlour_user enable row level security;
 create policy parlour_user_policy on parlour_user 
   using (user_uid = get_current_user());
+
+drop policy if exists admin_parlour_user_policy on parlour_user;
+create policy admin_parlour_user_policy on parlour_user to parlour_admin, parlour_root
+  using (true);
+
+drop trigger if exists parlour_user_updated_at on parlour_public.parlour_user;
+create trigger parlour_user_updated_at before update
+	on parlour_public.parlour_user 
+	for each row
+	execute procedure parlour_private.set_updated_at();
 
 -- Authentication
 drop type if exists parlour_public.identityProvider cascade;

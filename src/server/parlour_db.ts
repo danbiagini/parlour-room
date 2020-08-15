@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { logger } from "../common/logger";
-import { User, IDP } from "../common/types";
+import { User, IDP, Parlour } from "../common/types";
 
 let PARLOUR_DB = process.env.POSTGRAPHILE_URL;
 const PARLOUR_ROOT_URL = process.env.PARLOUR_ROOT_URL;
@@ -38,18 +38,30 @@ export const cleanPools = () => {
   );
 };
 
-export const poolFromUrl = (url: string, role?: string) => {
+export const poolFromUrl = (url: string, role?: string, user?: string) => {
   let key = url;
   if (role) {
     key += role;
   }
 
+  if (user) {
+    key += user;
+  }
+
   if (!pools[key]) {
     const p = new Pool({ connectionString: url });
-    if (role) {
+
+    if (role || user) {
+      logger.debug(`setting (role, user): (${role}, ${user})`);
       p.on("connect", (client) => {
-        const q = `SET ROLE ${role}`;
-        client.query(q);
+        if (role) {
+          client.query(`SET ROLE ${role}`);
+        }
+        if (user) {
+          client.query(
+            `select set_config('parlour.user.uid', '${user}', false);`
+          );
+        }
       });
     }
     p.on("error", (err, client) => {
@@ -68,29 +80,6 @@ export const getParlourDbPool = (role?: string) => {
 export const getParlourRootDbPool = (role?: string) => {
   return poolFromUrl(PARLOUR_ROOT_URL, role);
 };
-
-// export const coerceDateFromPgTimestamp = (stamp: string): Date => {
-//   const maybeEpoch = parseInt(stamp, 10);
-//   if (isNaN(maybeEpoch)) {
-//     stamp.match(
-//       /(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2}\.\d{3})\d*(\+\d{2})?(:\d{2})?/
-//     );
-//     // yyyy-mm-ddThh:mm:ss.mmm+TZ
-//     const withTz: string = stamp[0] + "T" + stamp[1];
-//     if (stamp[3]) {
-//       withTz.concat(stamp[3]);
-//       if (stamp[4]) {
-//         withTz.concat(stamp[4]);
-//       }
-//     } else {
-//       withTz.concat("+00:00");
-//     }
-//     return new Date(withTz);
-//   }
-
-//   // its an epoch!
-//   return new Date(maybeEpoch * 1000);
-// };
 
 const deserializeUser = (row: any) => {
   const user: User = {
@@ -112,6 +101,16 @@ const deserializeUser = (row: any) => {
     user.lastSignin = new Date(row.recent_login);
   }
   return user;
+};
+
+export const deserializeParlour = (row: any) => {
+  const p: Parlour = {
+    uid: row.uid,
+    creator_uid: row.creator_uid,
+    name: row.name,
+    description: row.description,
+  };
+  return p;
 };
 
 export const loginUser = async (idp: IDP, idp_id: string) => {
@@ -175,19 +174,6 @@ export const regUser = async (user: User) => {
     createdUser.idpId = user.idpId;
     createdUser.isSignedIn = false;
 
-    // const createdUser: User = {
-    //   firstName: result.rows[0].first_name,
-    //   lastName: result.rows[0].last_name,
-    //   username: result.rows[0].username,
-    //   email: result.rows[0].email,
-    //   email_subscription: result.rows[0].email_subscription,
-    //   about: result.rows[0].about,
-    //   profPicUrl: result.rows[0].prof_img_url,
-    //   isSignedIn: false,
-    //   idp: user.idp, // idp is not present in the register_user response
-    //   idpId: user.idpId, // idp_id is not present in the register_user response
-    //   uid: result.rows[0].uid,
-    // };
     await client.query("COMMIT");
     return createdUser;
   } catch (e) {

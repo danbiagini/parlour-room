@@ -9,6 +9,15 @@ export enum ACTIONS {
   INVALID = "INVALID",
 }
 
+export interface Parlour {
+  uid?: string;
+  name: string;
+  creator_uid: string;
+  description?: string;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
 export interface User {
   isSignedIn: boolean;
   username?: string;
