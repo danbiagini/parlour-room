@@ -41,7 +41,7 @@
    * <value>`
    */
   "pgSettings": {
-    // "search_path": "app_public,app_private,app_hidden,public",
+    "search_path": "parlour_public,parlour_private",
   },
 
   /*
@@ -85,14 +85,14 @@
    * afterReset: actions executed after a `graphile-migrate reset` command.
    */
   "afterReset": [
-    // "afterReset.sql",
-    // { "_": "command", "command": "graphile-worker --schema-only" },
+    { "_": "command", "command": "tools/dockerbuild/pg-init-scripts/roles.sh"}
   ],
  
   /*
    * afterAllMigrations: actions executed once all migrations are complete.
    */
   "afterAllMigrations": [
+    { "_": "command", "command": "npx ts-node tools/dbFixtures.ts users --count 10"},
     // {
     //   "_": "command",
     //   "shadow": true,
@@ -110,7 +110,11 @@
        "shadow": false,
        //"command": "if [ \"$IN_TESTS\" = \"1\" ]; then ./scripts/test-seed; fi",
        "command": "d=$(date); echo \"export const ts = '$d'; \n\" > src/db/test/jest.watch.hack.ts"
-    }
+    },
+    {
+      "_": "command",
+      "shadow": false,
+      "command": "npx ts-node tools/dbFixtures.ts users --count 10"},
   ],
 
   /*

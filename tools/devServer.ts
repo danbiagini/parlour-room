@@ -18,7 +18,7 @@ const PORT = 1234;
 // whatever values make sense to you.  Probably something like /api/**
 
 app.use(
-  "/api/",
+  ["/api", "/graphql"],
   createProxyMiddleware({
     // Your local server
     target: `http://localhost:${API_PORT}`,

@@ -29,6 +29,7 @@ function create_user_and_database() {
 	    CREATE ROLE $database;
 	    CREATE DATABASE $database;
 	    GRANT ALL PRIVILEGES ON DATABASE $database TO $database;
+      REVOKE ALL PRIVILEGES ON DATABASE $database FROM PUBLIC;
 EOSQL
 }
 

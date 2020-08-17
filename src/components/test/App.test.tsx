@@ -15,7 +15,6 @@ test("App can render correctly", () => {
 describe("render the App in the DOM, and navigate", () => {
   test("render the App in the DOM, and display About component", () => {
     const { getByText } = render(<App />);
-    expect(getByText("Wikipedia"));
     expect(getByText("A Place for", { exact: false }));
     expect(getByText("Login"));
   });
@@ -24,5 +23,11 @@ describe("render the App in the DOM, and navigate", () => {
     const { getByText } = render(<App />);
     fireEvent.click(getByText("Login"));
     expect(getByText("Sign In"));
+  });
+
+  test("navigate to the signup page", () => {
+    const { getByText } = render(<App />);
+    fireEvent.click(getByText("Sign Up"));
+    expect(getByText("Get started by signing in with Google"));
   });
 });

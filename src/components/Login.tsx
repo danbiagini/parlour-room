@@ -1,5 +1,5 @@
 import React from "react";
-import { Container, Row, Col, Modal, Button } from "react-bootstrap";
+import { Box, Button, Heading, Text, Layer } from "grommet";
 import {
   GoogleLogin,
   GoogleLogout,
@@ -7,34 +7,32 @@ import {
   useGoogleLogout,
 } from "react-google-login";
 import { useSelector, useDispatch } from "react-redux";
+import { useHistory, Redirect } from "react-router-dom";
 
-// import pp_logo from "../public/pparlour-logo.png";
 import * as config from "../common/client_config";
 import { RootState } from "../store/index";
 import { signinIdp, signoutIdp } from "../store/actions";
 import { User, IDP } from "../common/types";
-import { serverAuth } from "./Auth";
-
-import "./App.scss";
-import { useHistory } from "react-router-dom";
+import { auth } from "./Auth";
 
 export const Login: React.FC = () => {
-  const isSignedIn = useSelector((state: RootState) => state.isSignedIn);
-  const idpId = useSelector((state: RootState) => state.idpId);
-  const email = useSelector((state: RootState) => state.email);
+  const isSignedIn = useSelector((state: RootState) => state.user.isSignedIn);
+  const idpId = useSelector((state: RootState) => state.user.idpId);
+  const email = useSelector((state: RootState) => state.user.email);
   const history = useHistory();
   const dispatch = useDispatch();
 
   const responseSuccessGoogle = (response: GoogleLoginResponse) => {
-    // const whoami = response.getBasicProfile();
     const id = response.googleId;
     const id_token = response.tokenId;
     const email = response.profileObj.email;
     const name = response.profileObj.givenName;
     const last = response.profileObj.familyName;
-    console.log(
-      `${JSON.stringify(response)} hi ${email}, with token ${id_token}`
-    );
+    if (process.env.NODE_ENV != "production") {
+      console.log(
+        `Received google response: ${JSON.stringify(response, null, "\t")}`
+      );
+    }
 
     let newUser: User = {
       idpId: id,
@@ -44,12 +42,17 @@ export const Login: React.FC = () => {
       profPicUrl: response.profileObj.imageUrl,
       isSignedIn: false,
       lastName: last,
+      about: "",
+      email_subscription: false,
     };
 
-    serverAuth(newUser, id_token)
+    auth
+      .serverAuth(newUser, id_token, true)
       .then((response) => {
         if (response.code === 200) {
           console.log(`Success, logged in ${response.data.idpId}`);
+          dispatch(signinIdp(response.data, id_token));
+          return;
         } else if (response.code === 403) {
           console.log("403, user doesn't exist.");
         } else {
@@ -61,10 +64,11 @@ export const Login: React.FC = () => {
           newUser.firstName = undefined;
           newUser.email = undefined;
           newUser.profPicUrl = undefined;
+          newUser.email_subscription = undefined;
           newUser.lastName = undefined;
         }
         // setup the user in store
-        dispatch(signinIdp(newUser));
+        dispatch(signinIdp(newUser, id_token));
       })
       .catch((error) => {
         console.log(`Error: ${error}`);
@@ -91,58 +95,77 @@ export const Login: React.FC = () => {
     signOut();
   };
   const goToSignup = () => history.push("/signup");
+
+  if (isSignedIn) {
+    return <Redirect to="/" />;
+  }
+
   let alert = undefined;
-  if (!isSignedIn && idpId) {
+  if (idpId) {
     alert = (
-      <Modal.Dialog>
-        <Modal.Header closeButton onHide={handleNoShow}>
-          <Modal.Title>Parlour Account Not Found</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          No Parlour account found for Google account <b>{email}</b>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="primary" onClick={goToSignup}>
-            Sign up with this google account
-          </Button>
-        </Modal.Footer>
-      </Modal.Dialog>
+      <Layer
+        position="center"
+        onClickOutside={handleNoShow}
+        onEsc={handleNoShow}
+      >
+        <Box pad="medium" gap="small" width="medium">
+          <Heading level={3}>Parlour Account Not Found</Heading>
+          <Text>
+            No Parlour account found for Google account <b>{email}</b>, would
+            you like to sign up?
+          </Text>
+          <Box
+            as="footer"
+            gap="small"
+            direction="row"
+            align="center"
+            justify="center"
+          >
+            <Button onClick={goToSignup} label="Sign up" primary />
+            <Button onClick={handleNoShow} label="Cancel" />
+          </Box>
+        </Box>
+      </Layer>
     );
   }
 
   // GoogleLogin default scope is 'profile email'.
   return (
-    <Container>
-      <Row className="justify-content-md-center">
-        <Col className="text-center" md={3}>
-          {/* <img src={pp_logo} className="App-logo" alt="logo" /> */}
-          {alert ? alert : <div />}
-          {isSignedIn || idpId ? (
-            <div>
-              <h3>Sign Out</h3>
-              <GoogleLogout
-                clientId={config.googleConfig.clientId}
-                onLogoutSuccess={logoutGoogleSuccess}
-                buttonText="Logout"
-              />
-            </div>
-          ) : (
-            <div>
-              <h3>Sign In</h3>
-              <p>You are not signed in. Click below to sign in using Google.</p>
-              <GoogleLogin
-                responseType="id_token"
-                clientId={config.googleConfig.clientId}
-                onSuccess={responseSuccessGoogle}
-                onFailure={failedGoogle}
-                buttonText="Sign in with Google"
-                cookiePolicy={"single_host_origin"}
-                isSignedIn
-              />
-            </div>
-          )}
-        </Col>
-      </Row>
-    </Container>
+    <Box fill="vertical" justify="center" align="center" flex="shrink">
+      {alert ? alert : <div />}
+      {idpId ? (
+        <Box alignContent="center" align="center">
+          <Heading level={3}>Sign Out</Heading>
+          <Box direction="row" pad="large" width="medium" justify="center">
+            <GoogleLogout
+              clientId={config.googleConfig.clientId}
+              onLogoutSuccess={logoutGoogleSuccess}
+              buttonText="Logout"
+            />
+          </Box>
+        </Box>
+      ) : (
+        <Box alignContent="center" align="center">
+          <Heading alignSelf="center" level={3}>
+            Sign In
+          </Heading>
+          <Text>
+            You are not signed in. Click below to sign in using Google.
+          </Text>
+          <Box direction="row" pad="large" width="medium" justify="center">
+            <GoogleLogin
+              responseType="id_token"
+              clientId={config.googleConfig.clientId}
+              scope={config.googleConfig.scope.join(" ")}
+              onSuccess={responseSuccessGoogle}
+              onFailure={failedGoogle}
+              buttonText="Sign in with Google"
+              cookiePolicy={"single_host_origin"}
+              isSignedIn
+            />
+          </Box>
+        </Box>
+      )}
+    </Box>
   );
 };

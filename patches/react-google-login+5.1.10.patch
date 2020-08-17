@@ -1,0 +1,17 @@
+diff --git a/node_modules/react-google-login/src/use-google-login.js b/node_modules/react-google-login/src/use-google-login.js
+index a204567..726e2d7 100644
+--- a/node_modules/react-google-login/src/use-google-login.js
++++ b/node_modules/react-google-login/src/use-google-login.js
+@@ -82,9 +82,10 @@ const useGoogleLogin = ({
+         ux_mode: uxMode,
+         redirect_uri: redirectUri,
+         scope,
+-        access_type: accessType
++        access_type: accessType,
++        response_type: responseType
+       }
+-
++      console.log("DJB: resonpse_type:" + responseType);
+       if (responseType === 'code') {
+         params.access_type = 'offline'
+       }

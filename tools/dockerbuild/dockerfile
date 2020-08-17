@@ -1,9 +1,9 @@
 FROM postgres:12
 
 ENV POSTGRES_MULTIPLE_DATABASES=parlour,parlour_shadow
+ENV PARLOUR_ROOT_PASSWORD=${PARLOUR_ROOT_PASSWORD}
 ENV POSTGRAPHILE_PASSWORD=${POSTGRAPHILE_PASSWORD}
-ENV CREATE_ROLES=1
-# will need to add a POSTGRES_PASSWORD environment variable to the docker run command
+ENV DOCKER_BUILD=1
 
 COPY pg-init-scripts/create-multiple-databases.sh /docker-entrypoint-initdb.d/
 COPY pg-init-scripts/roles.sh /docker-entrypoint-initdb.d/

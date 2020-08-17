@@ -1,14 +1,20 @@
 import { Pool } from "pg";
 import { logger } from "../common/logger";
-import { User, IDP } from "../common/types";
+import { User, IDP, Parlour, ParlourRole } from "../common/types";
 
 let PARLOUR_DB = process.env.POSTGRAPHILE_URL;
+const PARLOUR_ROOT_URL = process.env.PARLOUR_ROOT_URL;
+
+const obfuscateDbUrl = (url: string) => {
+  return url.replace(/(postgres:\/\/[\w-]+:).*(@.*)/, "$1<password>$2");
+};
 
 if (process.env.NODE_ENV === "test") {
   PARLOUR_DB = process.env.TEST_DATABASE_URL;
   logger.info(`using test database: ${PARLOUR_DB}`);
-} else if (process.env.NODE_ENV === "development") {
-  logger.info(`parlour_db: ${PARLOUR_DB}`);
+} else {
+  logger.info(`parlour_db: ${obfuscateDbUrl(PARLOUR_DB)}`);
+  logger.info(`parlour root db: ${obfuscateDbUrl(PARLOUR_ROOT_URL)}`);
 }
 
 const pools = {} as {
@@ -32,24 +38,36 @@ export const cleanPools = () => {
   );
 };
 
-export const poolFromUrl = (url: string, role?: string) => {
+export const poolFromUrl = (url: string, role?: string, user?: string) => {
   let key = url;
   if (role) {
     key += role;
   }
 
+  if (user) {
+    key += user;
+  }
+
   if (!pools[key]) {
     const p = new Pool({ connectionString: url });
-    if (role) {
+
+    if (role || user) {
+      logger.debug(`setting (role, user): (${role}, ${user})`);
       p.on("connect", (client) => {
-        const q = `SET ROLE ${role}`;
-        client.query(q);
+        if (role) {
+          client.query(`SET ROLE ${role}`);
+        }
+        if (user) {
+          client.query(
+            `select set_config('parlour.user.uid', '${user}', false);`
+          );
+        }
       });
     }
     p.on("error", (err, client) => {
       logger.error(`DB client ${client}  emitted error ${err}`);
     });
-    logger.debug(`created pool: ${key}`);
+    logger.debug(`created pool: ${obfuscateDbUrl(key)}`);
     pools[key] = p;
   }
   return pools[key];
@@ -57,6 +75,100 @@ export const poolFromUrl = (url: string, role?: string) => {
 
 export const getParlourDbPool = (role?: string) => {
   return poolFromUrl(PARLOUR_DB, role);
+};
+
+export const getParlourRootDbPool = (role?: string) => {
+  return poolFromUrl(PARLOUR_ROOT_URL, role);
+};
+
+const deserializeUser = (row: any) => {
+  const user: User = {
+    isSignedIn: false,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    username: row.username,
+    email: row.email,
+    email_subscription: row.email_subscription,
+    about: row.about,
+    profPicUrl: row.prof_img_url,
+    uid: row.uid,
+    lastSignin: row.recent_login,
+    idp: row.idp,
+    idpId: row.idp_id,
+  };
+  if (isNaN(row.recent_login)) {
+    // not an epoch, try to convert postgresql timestamp output to Date compatible
+    user.lastSignin = new Date(row.recent_login);
+  }
+  return user;
+};
+
+export const deserializeParlour = (row: any) => {
+  const p: Parlour = {
+    uid: row.uid,
+    creator_uid: row.creator_uid,
+    name: row.name,
+    description: row.description,
+  };
+  return p;
+};
+
+export const getParlourMemberRole = (
+  user_uid: string,
+  parlour_uid: string
+): Promise<ParlourRole> => {
+  const p = getParlourDbPool(process.env.DB_ADMIN_USER);
+
+  return new Promise((resolve, reject) => {
+    p.query(
+      `select user_role from parlour_public.parlour_user 
+              where user_uid = $1 and parlour_uid = $2`,
+      [user_uid, parlour_uid]
+    )
+      .then((res) => {
+        if (res.rows.length == 1) {
+          resolve(res.rows[0].user_role);
+        } else {
+          logger.debug(
+            `parlour_user uid = ${user_uid} not found in parlour ${parlour_uid}`
+          );
+          resolve(ParlourRole.NONE);
+        }
+      })
+      .catch((err) => {
+        logger.error("getParlourMemberRole failed, error:" + err);
+        reject(err);
+      });
+  });
+};
+
+export const checkAdmin = (uid: string): Promise<ParlourRole> => {
+  return getParlourMemberRole(uid, process.env.ADMIN_PARLOUR_UID);
+};
+
+export const getUserByEmail = (email: string): Promise<User> => {
+  const p = getParlourDbPool(process.env.DB_ADMIN_USER);
+
+  return new Promise((resolve, reject) => {
+    p.query(
+      `select * from parlour_public.users inner join parlour_private.account 
+              on users.uid = account.uid
+              where email = $1`,
+      [email]
+    )
+      .then((res) => {
+        if (res.rows.length != 1) {
+          reject("User not found for email " + email);
+          return;
+        }
+        const user: User = deserializeUser(res.rows[0]);
+        resolve(user);
+      })
+      .catch((err) => {
+        logger.error("getUserByEmail failed, error:" + err);
+        reject(err);
+      });
+  });
 };
 
 export const loginUser = async (idp: IDP, idp_id: string) => {
@@ -76,18 +188,11 @@ export const loginUser = async (idp: IDP, idp_id: string) => {
       logger.silly(
         `loginUser rowCount: ${result.rowCount}, rows.length: ${result.rows.length} result row[0]: ${result.rows[0]}`
       );
-      user = {
-        firstName: result.rows[0].first_name,
-        lastName: result.rows[0].last_name,
-        username: result.rows[0].username,
-        email: result.rows[0].email,
-        about: result.rows[0].about,
-        profPicUrl: result.rows[0].prof_img_url,
-        uid: result.rows[0].uid,
-        isSignedIn: true,
-        idp: idp,
-        idpId: idp_id,
-      };
+      let row = result.rows[0];
+      user = deserializeUser(row);
+      user.isSignedIn = true;
+      user.idp = idp;
+      user.idpId = idp_id;
     })
     .catch((error) => {
       logger.debug(`error in login_user: ${error}`);
@@ -106,12 +211,13 @@ export const regUser = async (user: User) => {
   try {
     await client.query("BEGIN");
     const result = await client.query(
-      "select * from parlour_public.register_user($1, $2, $3, $4, $5, $6, $7, $8)",
+      "select * from parlour_private.register_user($1, $2, $3, $4, $5, $6, $7, $8, $9)",
       [
         user.username,
         user.lastName,
         user.firstName,
         user.email,
+        user.email_subscription ? user.email_subscription : false,
         user.about,
         user.profPicUrl,
         user.idp,
@@ -121,18 +227,11 @@ export const regUser = async (user: User) => {
     if (result.rows.length != 1) {
       throw Error("regUser: Unexpected result rows " + result.rows.length);
     }
-    const createdUser: User = {
-      firstName: result.rows[0].first_name,
-      lastName: result.rows[0].last_name,
-      username: result.rows[0].username,
-      email: result.rows[0].email,
-      about: result.rows[0].about,
-      profPicUrl: result.rows[0].prof_img_url,
-      isSignedIn: false,
-      idp: user.idp, // idp is not present in the register_user response
-      idpId: user.idpId, // idp_id is not present in the register_user response
-      uid: result.rows[0].uid,
-    };
+    const createdUser = deserializeUser(result.rows[0]);
+    createdUser.idp = user.idp;
+    createdUser.idpId = user.idpId;
+    createdUser.isSignedIn = false;
+
     await client.query("COMMIT");
     return createdUser;
   } catch (e) {
