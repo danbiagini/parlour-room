@@ -39,18 +39,20 @@ export default class Auth {
     return response;
   }
 
-  public async serverAuth(_user: User, id_token: string) {
-    console.log("starting server authentication");
-    const axRes = await this._apiClient.get<User>(
-      "/api/auth/google.com/login",
-      {
-        // params: { code: id_token },
-        headers: { Authorization: `Bearer ${id_token}` },
-        validateStatus: (status) => {
-          return status < 500;
-        },
-      }
-    );
+  public async serverAuth(
+    _user: User,
+    id_token: string,
+    checkAdmin: boolean = false
+  ) {
+    const endpoint =
+      "/api/auth/google.com/login" + (checkAdmin ? "?admin=true" : "");
+    const axRes = await this._apiClient.get<User>(endpoint, {
+      // params: { code: id_token },
+      headers: { Authorization: `Bearer ${id_token}` },
+      validateStatus: (status) => {
+        return status < 500;
+      },
+    });
     const response: ApiResponse = {
       data: axRes.data,
       code: axRes.status,

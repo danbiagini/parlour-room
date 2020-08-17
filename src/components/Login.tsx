@@ -47,7 +47,7 @@ export const Login: React.FC = () => {
     };
 
     auth
-      .serverAuth(newUser, id_token)
+      .serverAuth(newUser, id_token, true)
       .then((response) => {
         if (response.code === 200) {
           console.log(`Success, logged in ${response.data.idpId}`);

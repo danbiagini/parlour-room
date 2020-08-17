@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-debugger
 debugger;
 
-import { User, IDP } from "../../common/types";
+import { User, IDP, Parlour, ParlourRole } from "../../common/types";
 import {
   loginUser,
   poolFromUrl,
@@ -9,6 +9,8 @@ import {
   regUser,
   getParlourDbPool,
   getParlourRootDbPool,
+  getUserByEmail,
+  getParlourMemberRole,
 } from "../../server/parlour_db";
 import {
   testUser,
@@ -17,6 +19,7 @@ import {
   createUsers,
   testCreatedUsers,
   createParlours,
+  saveParlour,
 } from "./helper";
 
 const testId = "user-parlour.test";
@@ -80,6 +83,30 @@ describe("utility functions", () => {
         done();
       }
     );
+  });
+
+  it("can check for parlour role", async (done) => {
+    const adminUser = testCreatedUsers[0];
+    const TEST_ADMIN_PARLOUR = "faceface-face-face-face-facefaceface";
+    const adminParlour: Parlour = {
+      name: `Admin_id:${testId}`,
+      description: "Parlour for administration",
+      creator_uid: adminUser.uid,
+      uid: TEST_ADMIN_PARLOUR,
+    };
+
+    await expect(saveParlour(adminParlour)).resolves.toBe(adminParlour);
+    await expect(
+      getParlourMemberRole(adminUser.uid, TEST_ADMIN_PARLOUR)
+    ).resolves.toBe(ParlourRole.OWNER);
+    done();
+  });
+
+  it("can find a user by email", async (done) => {
+    await expect(getUserByEmail(testCreatedUsers[0].email)).resolves.toEqual(
+      testCreatedUsers[0]
+    );
+    done();
   });
 });
 
@@ -170,8 +197,8 @@ describe("grant restrictions on mutations ", () => {
     const p = getParlourRootDbPool(process.env.DB_ADMIN_USER);
     await p
       .query(
-        `insert into parlour_public.users (username, first_name, about) 
-		          values ('admin-insert@${testId}', 'Test', 'Once upon a test')`
+        `insert into parlour_public.users (username, first_name, email, about) 
+		          values ('admin-insert@${testId}', 'Test', 'admin-insert@${testId}', 'Once upon a test')`
       )
       .then((res) => {
         expect(res.rowCount).toBe(1);

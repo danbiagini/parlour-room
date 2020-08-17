@@ -53,15 +53,22 @@ export class cookieJar {
   };
 }
 
-export const login = async (app: Express.Application, user: User) => {
+export const login = async (
+  app: Express.Application,
+  user: User,
+  query?: string
+) => {
   return new Promise((resolve) => {
     const token = validToken(user);
     mockedGetPayload.mockReturnValueOnce(token);
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
 
+    const endpoint =
+      "/api/auth/google.com/login" + String(query ? `?${query}` : "");
+
     const agent = request(app)
-      .get("/api/auth/google.com/login")
+      .get(endpoint)
       .set("Authorization", "Bearer mocksAsValid-LoginTestFunc")
       .then((res) => {
         // response should have user signed in

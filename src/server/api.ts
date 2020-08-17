@@ -4,7 +4,8 @@ import {
   loginWithGoogleIdToken,
   registerWithGoogleIdToken,
 } from "./google_utils";
-import { User } from "../common/types";
+import { checkAdmin } from "./parlour_db";
+import { User, ParlourRole } from "../common/types";
 
 declare global {
   namespace Express {
@@ -81,6 +82,8 @@ api.get("/auth/:idp/login", async (req, res) => {
     return errorResponse(res, 401, "no auth code present");
   }
 
+  let loggedInUser: User = undefined;
+
   await loginWithGoogleIdToken(id_token)
     .then((user) => {
       if (user.email) {
@@ -93,7 +96,7 @@ api.get("/auth/:idp/login", async (req, res) => {
 
       req.session.user_id = user.uid;
       req.session.role = process.env.DB_SIGNEDIN_USER;
-      return res.json(user);
+      loggedInUser = user;
     })
     .catch((err) => {
       logger.debug(`token invalid, err: ${err}`);
@@ -104,6 +107,20 @@ api.get("/auth/:idp/login", async (req, res) => {
       }
       return errorResponse(res, 401, "code invalid");
     });
+
+  if (req.query.admin) {
+    await checkAdmin(loggedInUser.uid)
+      .then((res) => {
+        if (res == ParlourRole.OWNER) {
+          req.session.role = process.env.DB_ADMIN_USER;
+        }
+        logger.debug("checkAdmin:" + res);
+      })
+      .catch((err) => {
+        logger.error("admin check failed: " + err);
+      });
+  }
+  return res.json(loggedInUser);
 });
 
 api.post("/auth/:idp/register", async (req, res) => {

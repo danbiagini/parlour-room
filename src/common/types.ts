@@ -9,6 +9,13 @@ export enum ACTIONS {
   INVALID = "INVALID",
 }
 
+export enum ParlourRole {
+  MEMBER = "member",
+  OWNER = "owner",
+  MODERATOR = "moderator",
+  NONE = "none",
+}
+
 export interface Parlour {
   uid?: string;
   name: string;

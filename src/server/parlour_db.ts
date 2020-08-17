@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { logger } from "../common/logger";
-import { User, IDP, Parlour } from "../common/types";
+import { User, IDP, Parlour, ParlourRole } from "../common/types";
 
 let PARLOUR_DB = process.env.POSTGRAPHILE_URL;
 const PARLOUR_ROOT_URL = process.env.PARLOUR_ROOT_URL;
@@ -111,6 +111,64 @@ export const deserializeParlour = (row: any) => {
     description: row.description,
   };
   return p;
+};
+
+export const getParlourMemberRole = (
+  user_uid: string,
+  parlour_uid: string
+): Promise<ParlourRole> => {
+  const p = getParlourDbPool(process.env.DB_ADMIN_USER);
+
+  return new Promise((resolve, reject) => {
+    p.query(
+      `select user_role from parlour_public.parlour_user 
+              where user_uid = $1 and parlour_uid = $2`,
+      [user_uid, parlour_uid]
+    )
+      .then((res) => {
+        if (res.rows.length == 1) {
+          resolve(res.rows[0].user_role);
+        } else {
+          logger.debug(
+            `parlour_user uid = ${user_uid} not found in parlour ${parlour_uid}`
+          );
+          resolve(ParlourRole.NONE);
+        }
+      })
+      .catch((err) => {
+        logger.error("getParlourMemberRole failed, error:" + err);
+        reject(err);
+      });
+  });
+};
+
+export const checkAdmin = (uid: string): Promise<ParlourRole> => {
+  return getParlourMemberRole(uid, process.env.ADMIN_PARLOUR_UID);
+};
+
+export const getUserByEmail = (email: string): Promise<User> => {
+  const p = getParlourDbPool(process.env.DB_ADMIN_USER);
+
+  return new Promise((resolve, reject) => {
+    p.query(
+      `select * from parlour_public.users inner join parlour_private.account 
+              on users.uid = account.uid
+              where email = $1`,
+      [email]
+    )
+      .then((res) => {
+        if (res.rows.length != 1) {
+          reject("User not found for email " + email);
+          return;
+        }
+        const user: User = deserializeUser(res.rows[0]);
+        resolve(user);
+      })
+      .catch((err) => {
+        logger.error("getUserByEmail failed, error:" + err);
+        reject(err);
+      });
+  });
 };
 
 export const loginUser = async (idp: IDP, idp_id: string) => {

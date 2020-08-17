@@ -1,6 +1,6 @@
 /* eslint-disable no-debugger */
 import { app } from "../main";
-import { cleanPools } from "../parlour_db";
+import { cleanPools, getParlourDbPool } from "../parlour_db";
 import {
   ParlourSession,
   findSession,
@@ -12,6 +12,7 @@ import {
   deleteTestData,
   testUser,
   testCreatedUsers,
+  saveParlour,
 } from "../../db/test/helper";
 
 import {
@@ -176,7 +177,6 @@ describe("Auth login API", () => {
   it("returns 200 on valid user with Authorization hdr", async () => {
     const signedInUser = testCreatedUsers[0];
     signedInUser.isSignedIn = true;
-    // validToken["sub"] = signedInUser.idpId;
     mockedGetPayload.mockReturnValueOnce(validToken(signedInUser));
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
@@ -503,53 +503,70 @@ describe("Graphql queries", () => {
     done();
   });
 
-  // it("returns 200 all user objects on users query w/ admin auth", async (done) => {
-  //   const u = testCreatedUsers[0];
-  //   await login(app, u);
+  it("returns 200 all user objects on users query w/ admin auth", async (done) => {
+    const u = testCreatedUsers[0];
+    process.env.ADMIN_PARLOUR_UID = "faceface-face-face-face-facefaceface";
 
-  //   await request(app)
-  //     .post("/graphql")
-  //     .set("cookie", cookieJar.get())
-  //     .send(graphqlAllUsers)
-  //     .expect(200)
-  //     .expect((res) => {
-  //       expect(res.body.data.users.nodes.length()).toEqual(10);
-  //     });
-  //   done();
-  // });
+    await saveParlour({
+      name: `Admin Parlour id:${testId}`,
+      description: "test admin parlour",
+      creator_uid: u.uid,
+      uid: process.env.ADMIN_PARLOUR_UID,
+    });
 
-  // it("returns 200 on whoami w/ auth", async (done) => {
-  //   const u = testCreatedUsers[0];
-  //   await login(app, u);
+    await login(app, u, "admin=true");
 
-  //   const whoami = {
-  //     query: `{
-  //               whoami {
-  //                 firstName
-  //                 lastName
-  //                 email
-  //                 uid
-  //               }
-  //             }`,
-  //   };
-  //   await request(app)
-  //     .post("/graphql")
-  //     .set("cookie", cookieJar.get())
-  //     .send(whoami)
-  //     .expect(200, {
-  //       data: {
-  //         users: {
-  //           nodes: [
-  //             {
-  //               firstName: "Dan",
-  //               lastName: "B",
-  //               email: "db",
-  //               uid: "test",
-  //             },
-  //           ],
-  //         },
-  //       },
-  //     });
-  //   done();
-  // });
+    let count = 0;
+    await getParlourDbPool(process.env.DB_ADMIN_USER)
+      .query("select count(*) from parlour_public.users")
+      .then((res) => {
+        if (res.rows.length === 1) {
+          count = parseInt(res.rows[0].count);
+        }
+      })
+      .catch((err) => console.log("error getting user count:" + err));
+
+    await request(app)
+      .post("/graphql")
+      .set("cookie", cookieJar.get())
+      .send(graphqlAllUsers)
+      .expect(200)
+      .expect((res) => {
+        const body = res.body;
+        console.log(body.data.users.nodes);
+        expect(body.data.users.nodes.length).toEqual(count);
+      });
+    done();
+  });
+
+  it("returns 200 on whoami w/ auth", async (done) => {
+    const u = testCreatedUsers[0];
+    await login(app, u);
+
+    const whoami = {
+      query: `{
+                whoami {
+                  firstName
+                  lastName
+                  email
+                  uid
+                }
+              }`,
+    };
+    await request(app)
+      .post("/graphql")
+      .set("cookie", cookieJar.get())
+      .send(whoami)
+      .expect(200, {
+        data: {
+          whoami: {
+            firstName: u.firstName,
+            lastName: u.lastName,
+            email: u.email,
+            uid: u.uid,
+          },
+        },
+      });
+    done();
+  });
 });

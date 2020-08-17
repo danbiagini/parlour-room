@@ -33,7 +33,7 @@ create table parlour_public.users (
 	username text not null unique check (((length((username)::text) >= 3) AND (length((username)::text) <= 320) AND (username ~ '^[a-zA-Z0-9.!#$%&''*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'))),
 	first_name text check (char_length(first_name) < 80),
 	last_name text check (char_length(last_name) < 80),
-	email text check ((char_length(email) < 320) AND (email ~ '^[a-zA-Z0-9.!#$%&''*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$')),
+	email text not null check ((char_length(email) < 320) AND (email ~ '^[a-zA-Z0-9.!#$%&''*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$')),
 	about text check (char_length(about) < 2048),
 	prof_img_url text check ((char_length(prof_img_url) < 2048) AND (prof_img_url ~ '^https?://[^/]+'::text)),
   email_subscription boolean default false,
@@ -41,6 +41,7 @@ create table parlour_public.users (
 	created_at timestamptz not null  default now(),
 	updated_at timestamptz not null default now()
 );
+create index on parlour_public.users(email);
 
 comment on table parlour_public.users is 'Base user table for profiles';
 comment on column parlour_public.users.uid is 'System generated account uid';

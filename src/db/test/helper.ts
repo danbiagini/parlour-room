@@ -138,6 +138,29 @@ export const deleteTestData = async (dataId?: string) => {
   });
 };
 
+export const saveParlour = async (
+  par: types.Parlour
+): Promise<types.Parlour> => {
+  const p = getParlourRootDbPool();
+  return new Promise((resolve, reject) => {
+    p.query(
+      `insert into parlour_public.parlour (name, description, creator_uid, uid) 
+            values ($1, $2, $3, $4) returning (uid)`,
+      [par.name, par.description, par.creator_uid, par.uid]
+    )
+      .then((result) => {
+        if (result.rows.length === 1) {
+          par.uid = result.rows[0].uid;
+          resolve(par);
+        }
+      })
+      .catch((err) => {
+        logger.error("saveParlour failed, error:" + err);
+        reject("database error:" + err);
+      });
+  });
+};
+
 export const testParlours: types.Parlour[] = [];
 export const createParlours = async (
   count: number = 1,
