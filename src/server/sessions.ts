@@ -37,6 +37,8 @@ interface ParlourStoreOptions {
   tableName: string;
 }
 
+// beginnings of a session data-store
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 class ParlourSessionStore extends session.Store {
   pool: Pool;
   schema: string;
