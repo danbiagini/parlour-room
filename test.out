@@ -1,5 +1,0 @@
-lets create 10 users in DB:postgres://postgres:Pass2020!@localhost/parlour
-{"message":"parlour_db: postgres://postgres:<password>@localhost/parlour","level":"info","timestamp":"2020-08-09T17:27:00.079Z"}
-{"message":"parlour root db: postgres://parlour_root:<password>@localhost/parlour","level":"info","timestamp":"2020-08-09T17:27:00.080Z"}
-{"message":"created pool: postgres://postgres:<password>@localhost/parlour","level":"debug","timestamp":"2020-08-09T17:27:00.083Z"}
-{"message":"createdUsers results: 1","level":"debug","timestamp":"2020-08-09T17:27:00.202Z"}
