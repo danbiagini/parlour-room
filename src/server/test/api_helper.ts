@@ -90,7 +90,7 @@ export const login = async (
         cookieJar.set(res.header["set-cookie"][0]);
         const now = Date.now();
         expect(new Date(res.body.lastSignin).valueOf()).toBeWithin(
-          now.valueOf() - 1000,
+          now.valueOf() - 3000,
           now.valueOf()
         );
         resolve(agent);
