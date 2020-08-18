@@ -9,7 +9,6 @@ import {
 import { Login } from "../Login";
 import { SignUp } from "../SignUp";
 import Routes from "../Routes";
-import { testUser } from "../../db/test/helper";
 import React from "react";
 import {
   screen,
@@ -22,6 +21,18 @@ import "@testing-library/jest-dom";
 import axios from "axios";
 import Auth from "../Auth";
 import { act } from "react-dom/test-utils";
+
+const testUser: types.User = {
+  isSignedIn: false,
+  idpId: "12345",
+  idp: types.IDP.GOOGLE,
+  lastName: "Last",
+  firstName: "Dan",
+  email: "dan@smartguys.com",
+  about: "smart guy",
+  username: "notNull@thatsforsure.com",
+  profPicUrl: "http://mypic.com/1234567",
+};
 
 jest.mock("axios");
 const axiosMock = jest.fn();
