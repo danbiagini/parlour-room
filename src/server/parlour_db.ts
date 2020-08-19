@@ -1,11 +1,11 @@
-import { Pool } from "pg";
+import { Pool, PoolConfig } from "pg";
 import { logger } from "../common/logger";
 import { User, IDP, Parlour, ParlourRole } from "../common/types";
+import { readFileSync } from "fs";
 
 let PARLOUR_DB = process.env.POSTGRAPHILE_URL;
-const PARLOUR_ROOT_URL = process.env.PARLOUR_ROOT_URL;
 
-const obfuscateDbUrl = (url: string) => {
+export const obfuscateDbUrl = (url: string) => {
   return url.replace(/(postgres:\/\/[\w-]+:).*(@.*)/, "$1<password>$2");
 };
 
@@ -14,7 +14,6 @@ if (process.env.NODE_ENV === "test") {
   logger.info(`using test database: ${PARLOUR_DB}`);
 } else {
   logger.info(`parlour_db: ${obfuscateDbUrl(PARLOUR_DB)}`);
-  logger.info(`parlour root db: ${obfuscateDbUrl(PARLOUR_ROOT_URL)}`);
 }
 
 const pools = {} as {
@@ -49,7 +48,19 @@ export const poolFromUrl = (url: string, role?: string, user?: string) => {
   }
 
   if (!pools[key]) {
-    const p = new Pool({ connectionString: url });
+    const config: PoolConfig = { connectionString: url };
+    if (
+      process.env.DB_CLIENT_CRT &&
+      process.env.DB_CLIENT_KEY &&
+      process.env.DB_SERVER_CRT
+    ) {
+      config.ssl = {
+        ca: readFileSync(process.env.DB_SERVER_CRT).toString(),
+        key: readFileSync(process.env.DB_CLIENT_KEY).toString(),
+        cert: readFileSync(process.env.DB_CLIENT_CRT).toString(),
+      };
+    }
+    const p = new Pool(config);
 
     if (role || user) {
       logger.debug(`setting (role, user): (${role}, ${user})`);
@@ -75,10 +86,6 @@ export const poolFromUrl = (url: string, role?: string, user?: string) => {
 
 export const getParlourDbPool = (role?: string) => {
   return poolFromUrl(PARLOUR_DB, role);
-};
-
-export const getParlourRootDbPool = (role?: string) => {
-  return poolFromUrl(PARLOUR_ROOT_URL, role);
 };
 
 const deserializeUser = (row: any) => {

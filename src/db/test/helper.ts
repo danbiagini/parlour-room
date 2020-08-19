@@ -2,7 +2,6 @@ import * as types from "../../common/types";
 import {
   poolFromUrl,
   regUser,
-  getParlourRootDbPool,
   deserializeParlour,
 } from "../../server/parlour_db";
 import { logger } from "../../common/logger";
@@ -35,10 +34,16 @@ if (ts && process.env.NODE_ENV === "test") {
 if (!process.env.TEST_DATABASE_URL) {
   throw new Error("Can't run tests without a TEST_DATABASE_URL");
 }
+
+if (!process.env.PARLOUR_ROOT_URL) {
+  throw new Error("Can't run tests without a PARLOUR_ROOT_URL");
+}
+
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 export const DB_ANON_USER = process.env.DB_ANON_USER;
 export const DB_ROOT_USER = process.env.DB_PARLOUR_ROOT_USER;
 export const DB_ADMIN_USER = process.env.DB_ADMIN_USER;
+const PARLOUR_ROOT_URL = process.env.PARLOUR_ROOT_URL;
 
 export const testUser: types.User = {
   isSignedIn: false,
@@ -50,6 +55,10 @@ export const testUser: types.User = {
   about: "smart guy",
   username: "notNull@thatsforsure.com",
   profPicUrl: "http://mypic.com/1234567",
+};
+
+export const getParlourRootDbPool = (role?: string) => {
+  return poolFromUrl(PARLOUR_ROOT_URL, role);
 };
 
 export const cleanTestDb = async () => {
@@ -298,7 +307,6 @@ export const createSession = async (
     exp = new Date(Date.now() + 10000);
   }
   return new Promise((resolve, reject) => {
-    // const exp = new Date(Date.now() + 10000);
     poolFromUrl(TEST_DATABASE_URL, DB_ROOT_USER)
       .connect()
       .then((client) => {

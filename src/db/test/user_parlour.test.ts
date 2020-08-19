@@ -8,7 +8,6 @@ import {
   cleanPools,
   regUser,
   getParlourDbPool,
-  getParlourRootDbPool,
   getUserByEmail,
   getParlourMemberRole,
 } from "../../server/parlour_db";
@@ -17,6 +16,7 @@ import {
   TEST_DATABASE_URL,
   deleteTestData,
   createUsers,
+  getParlourRootDbPool,
   testCreatedUsers,
   createParlours,
   saveParlour,
