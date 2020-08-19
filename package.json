@@ -26,6 +26,7 @@
     "client-test": "jest src/components/test",
     "docker-build": "eval $(egrep -v '^#' .env | xargs) docker build --tag pandemicparlour-postgres tools/dockerbuild/",
     "docker-run": "docker run -d --env-file .env -p 5432:5432  pandemicparlour-postgres",
+    "db-proxy": "docker run -d -p 127.0.0.1:5432:5432  gcr.io/cloudsql-docker/gce-proxy:1.17 /cloud_sql_proxy -instances=pandemicparlour:us-east4:staging=tcp:0.0.0.0:5432",
     "db-migrate": "eval $(egrep -v '^#' .env | xargs) graphile-migrate watch",
     "db-reset": "ts-node tools/dbReset",
     "db-fixtures": "ts-node tools/dbFixtures"
