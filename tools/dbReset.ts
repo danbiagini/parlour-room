@@ -18,9 +18,9 @@ const r1 = readline.createInterface({
   output: process.stdout,
 });
 
-const database_url = process.env.ROOT_DATABASE_URL;
+const db_url = process.env.DATABASE_URL;
 r1.question(
-  `Are you sure you want to reset the databse at ${database_url} [y|n]? `,
+  `Are you sure you want to reset the databse at ${db_url} [y|n]? `,
   (yes) => {
     if (yes != "Y" && yes != "y") {
       console.log(`${yes} is not "Y" or "y", aborting`);

@@ -9,6 +9,8 @@ const client = new SecretManagerServiceClient();
 
 const project = "projects/pandemicparlour";
 
+const envRe = RegExp(`${process.env.NODE_ENV}-(.*)`);
+
 async function getProjectSecrets(
   parentPath = project
 ): Promise<googleprotos.google.cloud.secretmanager.v1.ISecret[]> {
@@ -50,13 +52,24 @@ dotenv.config({
   path: env,
 });
 
+console.info(`Building secrets for environment ${process.env.NODE_ENV}`);
+
 getProjectSecrets()
   .then((secrets) => {
     secrets.forEach((secret) => {
+        if (secret.labels && secret.labels.env && (secret.labels.env !== process.env.NODE_ENV)) {
+            console.log(`skipping secret ${secret.name}, label env=${secret.labels.env}`);
+            return;
+        }
       getSecretLatestEnabled(secret.name)
         .then((payload) => {
           const secretPath: string[] = secret.name.split("/");
-          const secretName = secretPath[3];
+          let secretName = secretPath[3];
+
+          if (secret.labels.env) {
+            secretName = secretName.replace(envRe, "$1");
+          }
+
           const value = payload;
           // tslint:disable-next-line: no-console
           console.info(`Env: ${secretName}=${payload.substr(0, 1)}`);
