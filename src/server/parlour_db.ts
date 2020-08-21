@@ -128,7 +128,7 @@ export const getParlourMemberRole = (
 
   return new Promise((resolve, reject) => {
     p.query(
-      `select user_role from parlour_public.parlour_user 
+      `select user_role from parlour_public.parlour_user_join 
               where user_uid = $1 and parlour_uid = $2`,
       [user_uid, parlour_uid]
     )
@@ -137,7 +137,7 @@ export const getParlourMemberRole = (
           resolve(res.rows[0].user_role);
         } else {
           logger.debug(
-            `parlour_user uid = ${user_uid} not found in parlour ${parlour_uid}`
+            `parlour_user_join uid = ${user_uid} not found in parlour ${parlour_uid}`
           );
           resolve(ParlourRole.NONE);
         }

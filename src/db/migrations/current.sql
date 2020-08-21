@@ -95,7 +95,7 @@ drop table if exists parlour_public.parlour cascade;
 create table parlour_public.parlour (
 	uid uuid primary key default gen_random_uuid(),
 	name text not null,
-	creator_uid uuid not null references parlour_public.users(uid) on delete cascade,
+	creator_uid uuid references parlour_public.users(uid) on delete set null,
 	description text,
 	created_at timestamptz not null default now(),
 	updated_at timestamptz not null default now(),
@@ -116,7 +116,7 @@ grant select on table parlour_public.parlour to parlour_user;
 drop function if exists parlour_private.add_parlour_member;
 create function parlour_private.add_parlour_member() returns trigger as $$
 begin
-  insert into parlour_public.parlour_user(parlour_uid, user_uid, user_role) 
+  insert into parlour_public.parlour_user_join(parlour_uid, user_uid, user_role) 
     values (NEW.uid, NEW.creator_uid, 'owner'::parlour_public.parlourRole);
   return null;
 end
@@ -141,38 +141,48 @@ create type parlour_public.parlourRole as enum (
   'moderator'
 );
 
-drop table if exists parlour_public.parlour_user;
-create table parlour_public.parlour_user (
+drop table if exists parlour_public.parlour_user_join;
+create table parlour_public.parlour_user_join (
   parlour_uid uuid not null references parlour_public.parlour(uid) on delete cascade,
   user_uid uuid not null references parlour_public.users(uid) on delete cascade,
   user_role parlourRole not null,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint parlour_user unique (parlour_uid, user_uid)
 );
-create index on parlour_public.parlour_user(parlour_uid);
-create index on parlour_public.parlour_user(user_uid);
+create index on parlour_public.parlour_user_join(parlour_uid);
+create index on parlour_public.parlour_user_join(user_uid);
 
-comment on column parlour_public.parlour_user.user_uid is 'The uid of the member (user) belonging to parlour';
-comment on column parlour_public.parlour_user.parlour_uid is 'The uid of the parlour';
-comment on column parlour_public.parlour_user.user_role is 'User''s role in the parlour';
-comment on column parlour_public.parlour_user.created_at is 'Time this parlour membership was created';
-comment on column parlour_public.parlour_user.updated_at is 'Time this parlour membership was last updated';
+comment on column parlour_public.parlour_user_join.user_uid is 'The uid of the member (user) belonging to parlour';
+comment on column parlour_public.parlour_user_join.parlour_uid is 'The uid of the parlour';
+comment on column parlour_public.parlour_user_join.user_role is 'User''s role in the parlour';
+comment on column parlour_public.parlour_user_join.created_at is 'Time this parlour membership was created';
+comment on column parlour_public.parlour_user_join.updated_at is 'Time this parlour membership was last updated';
 
-grant select on table parlour_public.parlour_user to parlour_user;
+grant select on table parlour_public.parlour_user_join to parlour_user;
+
+drop function if exists parlour_public.current_user_member_parlour_uids cascade;
+create function parlour_public.current_user_member_parlour_uids() returns setof uuid as $$
+  select parlour_uid from parlour_public.parlour_user_join 
+    where user_uid = parlour_public.get_current_user();
+$$ language sql stable security definer ;
+
+grant execute on function parlour_public.current_user_member_parlour_uids to parlour_user;
 
 -- TODO: This policy only allows checking membership for the logged in user, 
 --   it doesn't support finding other parlour members
-alter table parlour_public.parlour_user enable row level security;
-create policy parlour_user_policy on parlour_user 
-  using (user_uid = get_current_user());
+alter table parlour_public.parlour_user_join enable row level security;
+create policy parlour_user_policy on parlour_user_join 
+  using (user_uid = get_current_user() or 
+          parlour_uid in (select parlour_public.current_user_member_parlour_uids()));
 
-drop policy if exists admin_parlour_user_policy on parlour_user;
-create policy admin_parlour_user_policy on parlour_user to parlour_admin, parlour_root
+drop policy if exists admin_parlour_user_policy on parlour_user_join;
+create policy admin_parlour_user_policy on parlour_user_join to parlour_admin, parlour_root
   using (true);
 
-drop trigger if exists parlour_user_updated_at on parlour_public.parlour_user;
+drop trigger if exists parlour_user_updated_at on parlour_public.parlour_user_join;
 create trigger parlour_user_updated_at before update
-	on parlour_public.parlour_user 
+	on parlour_public.parlour_user_join 
 	for each row
 	execute procedure parlour_private.set_updated_at();
 
@@ -188,7 +198,8 @@ create table parlour_private.account (
 	uid uuid primary key references parlour_public.users(uid) on delete cascade,
 	idp parlour_public.identityProvider not null,
 	id_token text,
-	idp_id text not null
+	idp_id text not null,
+  constraint account_unique unique(uid, idp_id, idp)
 );
 
 comment on table parlour_private.account is 'Account secret data';

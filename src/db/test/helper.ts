@@ -66,7 +66,7 @@ export const cleanTestDb = async () => {
   const p = await getParlourRootDbPool();
   try {
     await p.query("delete from parlour_public.users");
-    await p.query("delete from parlour_public.parlour_user");
+    await p.query("delete from parlour_public.parlour_user_join");
     await p.query("delete from parlour_public.parlour");
     await p.query("delete from parlour_private.account");
     await p.query("delete from parlour_private.login_session");

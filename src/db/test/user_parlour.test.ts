@@ -110,7 +110,7 @@ describe("utility functions", () => {
   });
 });
 
-describe("grant restrictions on mutations ", () => {
+describe("grant restrictions on users and parlours ", () => {
   it("anon cannot manually insert a user", async (done) => {
     const client = await poolFromUrl(
       TEST_DATABASE_URL,
@@ -246,7 +246,7 @@ describe("grant restrictions on mutations ", () => {
       process.env.DB_SIGNEDIN_USER,
       testCreatedUsers[1].uid
     ).query(
-      `select pu.* from parlour_public.parlour_user as pu inner join parlour_public.parlour as p
+      `select pu.* from parlour_public.parlour_user_join as pu inner join parlour_public.parlour as p
         on p.uid = pu.parlour_uid`
     );
     expect(result.rows.length).toEqual(2);
@@ -277,7 +277,7 @@ describe("grant restrictions on mutations ", () => {
       TEST_DATABASE_URL,
       process.env.DB_ADMIN_USER
     ).query(
-      `select pu.* from parlour_public.parlour_user as pu inner join parlour_public.parlour as p
+      `select pu.* from parlour_public.parlour_user_join as pu inner join parlour_public.parlour as p
         on p.uid = pu.parlour_uid where p.name like '%${testId}%' 
         order by pu.created_at desc`
     );
