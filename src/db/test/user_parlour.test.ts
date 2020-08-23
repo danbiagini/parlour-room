@@ -20,6 +20,8 @@ import {
   testCreatedUsers,
   createParlours,
   saveParlour,
+  createInvitation,
+  testParlours,
 } from "./helper";
 
 const testId = "user-parlour.test";
@@ -252,6 +254,36 @@ describe("grant restrictions on users and parlours ", () => {
     expect(result.rows.length).toEqual(2);
     expect(result.rows[0]["user_uid"]).toEqual(testCreatedUsers[1].uid);
     expect(result.rows[1]["user_uid"]).toEqual(testCreatedUsers[1].uid);
+    done();
+  });
+
+  it("user can query for their invites", async (done) => {
+    await createUsers(2, testId);
+    await createParlours(2, testId, 0);
+    await createInvitation(
+      testParlours[0].uid,
+      testCreatedUsers[0].email
+    ).catch((err) => {
+      console.log(
+        `error: ${err}; couldn't create invitation for parlour ${testParlours[0].uid} and user ${testCreatedUsers[0].email}`
+      );
+      throw err;
+    });
+
+    const result = await poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_SIGNEDIN_USER,
+      testCreatedUsers[0].uid
+    ).query(`select * from parlour_public.invitation`);
+    expect(result.rows.length).toEqual(1);
+    expect(result.rows[0]["parlour_uid"]).toEqual(testParlours[0].uid);
+
+    const res2 = await poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_SIGNEDIN_USER,
+      testCreatedUsers[1].uid
+    ).query(`select * from parlour_public.invitation`);
+    expect(res2.rows.length).toEqual(0);
     done();
   });
 

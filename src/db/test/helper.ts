@@ -67,6 +67,7 @@ export const cleanTestDb = async () => {
   try {
     await p.query("delete from parlour_public.users");
     await p.query("delete from parlour_public.parlour_user_join");
+    await p.query("delete from parlour_public.invitation");
     await p.query("delete from parlour_public.parlour");
     await p.query("delete from parlour_private.account");
     await p.query("delete from parlour_private.login_session");
@@ -112,10 +113,11 @@ export const deleteTestParlours = async () => {
       pool.query("delete from parlour_public.parlour where uid = $1", [p.uid])
     );
   });
+  testParlours.length = 0;
   return Promise.all(deletes);
 };
 
-const deleteDataById = (id: string) => {
+const deleteDataById = async (id: string) => {
   console.log("deleting test data with id:" + id);
   const deletes: Promise<QueryResult>[] = [];
 
@@ -126,9 +128,17 @@ const deleteDataById = (id: string) => {
       [id]
     )
   );
+  testCreatedUsers.length = 0;
   deletes.push(
     p.query(
       "delete from parlour_public.parlour where name like '%_id:' || $1 || '%'",
+      [id]
+    )
+  );
+  testParlours.length = 0;
+  deletes.push(
+    p.query(
+      "delete from parlour_public.invitation where description like '%' || $1 || '%'",
       [id]
     )
   );
@@ -170,6 +180,28 @@ export const saveParlour = async (
   });
 };
 
+export const createInvitation = async (
+  parlour: string,
+  email: string,
+  base: string = "default"
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    getParlourRootDbPool()
+      .query(
+        "insert into parlour_public.invitation (email, parlour_uid, description) values ($1, $2, $3) returning uid",
+        [email, parlour, base]
+      )
+      .then((result) => {
+        console.log("created invite, uid:" + result.rows[0]["uid"]);
+        resolve(result.rows[0]["uid"]);
+      })
+      .catch((err) => {
+        console.log("error creating invite: " + err);
+        reject(err);
+      });
+  });
+};
+
 export const testParlours: types.Parlour[] = [];
 export const createParlours = async (
   count: number = 1,
@@ -179,7 +211,7 @@ export const createParlours = async (
 ) => {
   if (!creatorUid) {
     console.log(
-      `creating parlours using idx ${creatorTestUserIdx}, uid ${testCreatedUsers[creatorTestUserIdx].uid}, 
+      `creating ${count} parlours using idx ${creatorTestUserIdx}, uid ${testCreatedUsers[creatorTestUserIdx].uid}, 
       and createduser length ${testCreatedUsers.length} `
     );
     creatorUid = testCreatedUsers[creatorTestUserIdx].uid;
@@ -198,13 +230,16 @@ export const createParlours = async (
       pool
         .query(
           `insert into parlour_public.parlour(description, name, creator_uid) values ($1, $2, $3) 
-          returning (uid, name, description, creator_uid)`,
+          returning uid, name, description, creator_uid`,
           [p.description, p.name, p.creator_uid]
         )
         .then((result) => {
+          if (result.rows.length == 0) {
+            throw new Error("insert returned no result rows");
+          }
           const p = deserializeParlour(result.rows[0]);
           testParlours.push(p);
-          console.log("created parlour: " + p);
+          console.log("created parlour: " + JSON.stringify(p));
         })
         .catch((err) =>
           console.log(
