@@ -32,7 +32,7 @@ export const SignUp: React.FC = () => {
   const isSignedIn = useSelector((state: RootState) => state.user.isSignedIn);
   const currentUser = useSelector((state: RootState) => state.user);
   const idpToken = useSelector((state: RootState) => state.idp_token);
-  const [goHome, setGoHome] = useState(false);
+  const [redirect, setRedirect] = useState<string>(undefined);
   const [formUser, setFormUser] = useState(Object.assign({}, currentUser));
   const [editAvatar, setEditAvatar] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +49,7 @@ export const SignUp: React.FC = () => {
   }, [currentUser, isSignedIn]);
 
   const handleGoHome = () => {
-    setGoHome(true);
+    setRedirect("/");
   };
 
   const failedGoogle = (error: any) => {
@@ -62,9 +62,6 @@ export const SignUp: React.FC = () => {
     const email = response.profileObj.email;
     const name = response.profileObj.givenName;
     const last = response.profileObj.familyName;
-    // clientLogger.log("DEBUG",
-    //   `${JSON.stringify(response)} hi ${email}, with token ${id_token}`
-    // );
 
     let newUser: User = {
       idpId: id,
@@ -81,7 +78,7 @@ export const SignUp: React.FC = () => {
   };
 
   const onCancel = () => {
-    setGoHome(true);
+    setRedirect("/");
   };
 
   const submitRegForm = (event: any) => {
@@ -95,12 +92,17 @@ export const SignUp: React.FC = () => {
       .then((response) => {
         clientLogger.debug("server response: " + JSON.stringify(response));
         setIsLoading(false);
-        const authUser: User = Object.assign({}, response.data);
-        dispatch(signinIdp(authUser, idpToken));
-        setGoHome(true);
+        if (response.code == 200) {
+          const authUser: User = Object.assign({}, response.data);
+          dispatch(signinIdp(authUser, idpToken));
+          setRedirect("/");
+        } else if (response.code == 403) {
+          setRedirect("/no_invite");
+        }
       })
       .catch((err) => {
         clientLogger.log("ERROR", "Error registering new user:" + err);
+        setRedirect("/error_page");
       });
   };
 
@@ -108,8 +110,8 @@ export const SignUp: React.FC = () => {
     setFormUser({ ...formUser, profPicUrl: "" });
   };
 
-  if (goHome) {
-    return <Redirect to="/" />;
+  if (redirect) {
+    return <Redirect to={redirect} />;
   }
   clientLogger.debug(
     "SignIn component executing, " + JSON.stringify(currentUser)

@@ -162,11 +162,20 @@ export const saveParlour = async (
 ): Promise<types.Parlour> => {
   const p = getParlourRootDbPool();
   return new Promise((resolve, reject) => {
-    p.query(
-      `insert into parlour_public.parlour (name, description, creator_uid, uid) 
-            values ($1, $2, $3, $4) returning (uid)`,
-      [par.name, par.description, par.creator_uid, par.uid]
-    )
+    let params: string[] = [
+      par.name,
+      par.description,
+      par.creator_uid,
+      par.uid,
+    ];
+    let query = `insert into parlour_public.parlour (name, description, creator_uid, uid) 
+            values ($1, $2, $3, $4) returning uid`;
+    if (!par.uid) {
+      query =
+        "insert into parlour_public.parlour (name, description, creator_uid) values ($1, $2, $3) returning uid";
+      params = [par.name, par.description, par.creator_uid];
+    }
+    p.query(query, params)
       .then((result) => {
         if (result.rows.length === 1) {
           par.uid = result.rows[0].uid;
@@ -183,13 +192,14 @@ export const saveParlour = async (
 export const createInvitation = async (
   parlour: string,
   email: string,
+  requires_uid: boolean = true,
   base: string = "default"
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     getParlourRootDbPool()
       .query(
-        "insert into parlour_public.invitation (email, parlour_uid, description) values ($1, $2, $3) returning uid",
-        [email, parlour, base]
+        "insert into parlour_public.invitation (email, parlour_uid, description, requires_uid) values ($1, $2, $3, $4) returning uid",
+        [email, parlour, base, requires_uid]
       )
       .then((result) => {
         console.log("created invite, uid:" + result.rows[0]["uid"]);

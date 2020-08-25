@@ -13,6 +13,7 @@ import {
   testUser,
   testCreatedUsers,
   saveParlour,
+  createInvitation,
 } from "../../db/test/helper";
 
 import {
@@ -39,13 +40,11 @@ beforeAll(async () => {
   jest
     .spyOn(LoginTicket.prototype, "getPayload")
     .mockImplementation(mockedGetPayload);
-  // await cleanTestDb();
   await deleteTestData(testId);
   await createUsers(10, testId);
 });
 
 afterAll(async () => {
-  await deleteTestData(testId);
   await cleanPools();
   jest.restoreAllMocks();
 });
@@ -167,10 +166,9 @@ describe("Auth login API", () => {
       Date.now() + MAXIMUM_SESSION_DURATION_IN_MILLISECONDS
     );
     expect(expires.valueOf()).toBeWithin(
-      target.valueOf() - 5000,
-      target.valueOf() + 5000
+      target.valueOf() - 10000,
+      target.valueOf() + 10000
     );
-    expect(expires.valueOf()).toBeGreaterThanOrEqual(target.valueOf());
     expect(s.sess.user_id).toEqual(signedInUser.uid);
   });
 
@@ -212,12 +210,20 @@ describe("Auth login API", () => {
     const target = new Date(
       Date.now() + MAXIMUM_SESSION_DURATION_IN_MILLISECONDS
     );
-    expect(expires.valueOf()).toBeGreaterThanOrEqual(target.valueOf());
+    expect(expires.valueOf()).toBeWithin(
+      target.valueOf() - 10000,
+      target.valueOf() + 10000
+    );
     expect(s.sess.user_id).toEqual(signedInUser.uid);
   });
 });
 
 describe("Auth register API", () => {
+  beforeEach(async (done) => {
+    await deleteTestData(testId).then(() => createUsers(5, testId));
+    done();
+  });
+
   it("returns 404 when no idp provided", async () => {
     const res = await request(app).get("/api/auth/register");
     expect(res.status).toBe(404);
@@ -277,7 +283,7 @@ describe("Auth register API", () => {
     await request(app)
       .post("/api/auth/google.com/register?code=12345679")
       .type("application/json")
-      .expect(401, { message: "code invalid" })
+      .expect(401, { message: "register invalid" })
       .expect((res) => {
         expect(res.header).not.toHaveProperty("set-cookie");
       });
@@ -347,9 +353,31 @@ describe("Auth register API", () => {
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
   });
 
+  it("returns 403 on valid user w/ no invite", async () => {
+    mockedGetPayload.mockResolvedValueOnce(testUserToken);
+    const myTicket: LoginTicket = new LoginTicket();
+    mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
+
+    await request(app)
+      .post("/api/auth/google.com/register?code=mocksAsValid")
+      .send(testUser)
+      .type("application/json")
+      .expect("Content-Type", "application/json; charset=utf-8")
+      .expect(403, { message: "User not allowed" });
+  });
+
   it("returns 409 on existing user", async () => {
     const signedInUser = testCreatedUsers[0];
     signedInUser.isSignedIn = false;
+
+    await saveParlour({
+      name: `Null Parlour id:${testId}`,
+      description: "test null parlour",
+      creator_uid: signedInUser.uid,
+    }).then((par) =>
+      createInvitation(par.uid, signedInUser.email, false, testId)
+    );
+
     const dup = Object.assign({}, testUserToken);
     dup["email"] = signedInUser.email;
     dup["sub"] = signedInUser.idpId;
@@ -368,15 +396,76 @@ describe("Auth register API", () => {
     expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
   });
 
-  it("returns 200 on valid user", async () => {
+  it("returns 200 on valid user w/ open invite", async () => {
     mockedGetPayload.mockResolvedValueOnce(testUserToken);
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
+
+    await saveParlour({
+      name: `Null Parlour id:${testId}`,
+      description: "test null parlour",
+      creator_uid: testUser.uid,
+    }).then((par) => createInvitation(par.uid, "", false, testId));
 
     let sid: string = undefined;
     let uid: string = undefined;
     await request(app)
       .post("/api/auth/google.com/register?code=mocksAsValid")
+      .send(testUser)
+      .type("application/json")
+      .expect("Content-Type", "application/json; charset=utf-8")
+      .expect((res) => {
+        testUser.isSignedIn = true;
+        expect(res.status).toBe(200);
+        expect(res.body).toMatchObject(testUser);
+      })
+      .expect(
+        "set-cookie",
+        /parlourSession=.*; Path=\/; Expires=.*; HttpOnly; SameSite=Strict/
+      )
+      .expect((res) => {
+        sid =
+          cookieParser.signedCookie(
+            cookie.parse(res.header["set-cookie"][0]).parlourSession,
+            process.env.SESSION_SECRET
+          ) || "not found";
+        uid = res.body.uid;
+      });
+    expect(mockedVerifyIdToken.mock.calls).toHaveLength(1);
+
+    const s: ParlourSession = await findSession(sid);
+    const expires = new Date(s.expires);
+    const target = new Date(
+      Date.now() + MAXIMUM_SESSION_DURATION_IN_MILLISECONDS
+    );
+    expect(expires.valueOf()).toBeWithin(
+      target.valueOf() - 1000,
+      target.valueOf() + 1000
+    );
+    expect(s.sess.user_id).toEqual(uid);
+  });
+
+  it("returns 200 on valid user w/ query param invite", async () => {
+    mockedGetPayload.mockResolvedValueOnce(testUserToken);
+    const myTicket: LoginTicket = new LoginTicket();
+    mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
+
+    let invite = "";
+
+    await saveParlour({
+      name: `Null Parlour id:${testId}`,
+      description: "test null parlour",
+      creator_uid: testUser.uid,
+    })
+      .then((par) => createInvitation(par.uid, "", true, testId))
+      .then((uid) => {
+        invite = uid;
+      });
+
+    let sid: string = undefined;
+    let uid: string = undefined;
+    await request(app)
+      .post(`/api/auth/google.com/register?invite=${invite}&code=mocksAsValid`)
       .send(testUser)
       .type("application/json")
       .expect("Content-Type", "application/json; charset=utf-8")
@@ -505,7 +594,8 @@ describe("Graphql queries", () => {
 
   it("returns 200 all user objects on users query w/ admin auth", async (done) => {
     const u = testCreatedUsers[0];
-    process.env.ADMIN_PARLOUR_UID = "faceface-face-face-face-facefaceface";
+
+    process.env.ADMIN_PARLOUR_UID = "aeaeface-face-face-face-facefaceface";
 
     await saveParlour({
       name: `Admin Parlour id:${testId}`,

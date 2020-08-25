@@ -262,7 +262,9 @@ describe("grant restrictions on users and parlours ", () => {
     await createParlours(2, testId, 0);
     await createInvitation(
       testParlours[0].uid,
-      testCreatedUsers[0].email
+      testCreatedUsers[0].email,
+      true,
+      testId
     ).catch((err) => {
       console.log(
         `error: ${err}; couldn't create invitation for parlour ${testParlours[0].uid} and user ${testCreatedUsers[0].email}`
@@ -274,7 +276,9 @@ describe("grant restrictions on users and parlours ", () => {
       TEST_DATABASE_URL,
       process.env.DB_SIGNEDIN_USER,
       testCreatedUsers[0].uid
-    ).query(`select * from parlour_public.invitation`);
+    ).query(
+      `select * from parlour_public.invitation where description = '${testId}'`
+    );
     expect(result.rows.length).toEqual(1);
     expect(result.rows[0]["parlour_uid"]).toEqual(testParlours[0].uid);
 
@@ -282,7 +286,9 @@ describe("grant restrictions on users and parlours ", () => {
       TEST_DATABASE_URL,
       process.env.DB_SIGNEDIN_USER,
       testCreatedUsers[1].uid
-    ).query(`select * from parlour_public.invitation`);
+    ).query(
+      `select * from parlour_public.invitation where description = '${testId}'`
+    );
     expect(res2.rows.length).toEqual(0);
     done();
   });

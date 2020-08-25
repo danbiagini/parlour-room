@@ -24,6 +24,11 @@ create or replace function parlour_public.get_current_user() returns uuid as $$
 $$ language sql stable;
 grant execute on function parlour_public.get_current_user() to parlour_user, parlour_postgraphile;
 
+drop function if exists parlour_public.check_email() cascade;
+create or replace function parlour_public.check_email(email text) returns boolean as $$
+  select ((char_length(email) < 320) AND (email ~ '^[a-zA-Z0-9.!#$%&''*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'));
+$$ language sql stable;
+
 -- User stuff
 drop table if exists parlour_public.users cascade;
 create table parlour_public.users (
@@ -33,7 +38,7 @@ create table parlour_public.users (
 	username text not null unique check (((length((username)::text) >= 3) AND (length((username)::text) <= 320) AND (username ~ '^[a-zA-Z0-9.!#$%&''*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'))),
 	first_name text check (char_length(first_name) < 80),
 	last_name text check (char_length(last_name) < 80),
-	email text not null check ((char_length(email) < 320) AND (email ~ '^[a-zA-Z0-9.!#$%&''*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$')),
+	email text not null check (parlour_public.check_email(email)),
 	about text check (char_length(about) < 2048),
 	prof_img_url text check ((char_length(prof_img_url) < 2048) AND (prof_img_url ~ '^https?://[^/]+'::text)),
   email_subscription boolean default false,
@@ -311,7 +316,7 @@ create trigger login_session_updated_at before update
 drop table if exists parlour_public.invitation cascade;
 create table parlour_public.invitation (
 	uid uuid primary key default gen_random_uuid(),
-	email text not null default '' check ((char_length(email) < 320) AND (email ~ '^[a-zA-Z0-9.!#$%&''*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$')),
+	email text not null default '' check (email = '' or parlour_public.check_email(email)),
   parlour_uid uuid not null references parlour_public.parlour(uid) on delete cascade,
   creator_uid uuid default get_current_user() references parlour_public.users(uid) on delete cascade,
   requires_uid boolean not null default true,
@@ -331,7 +336,7 @@ comment on column parlour_public.invitation.created_at is 'Invite create time';
 comment on column parlour_public.invitation.updated_at is 'Invite last update time';
 comment on column parlour_public.invitation.expires_at is 'Invite expire time';
 comment on column parlour_public.invitation.description is 'Invite description or information to display';
-comment on column parlour_public.requires_uid is 'Does invite acceptance require the uid';
+comment on column parlour_public.invitation.requires_uid is 'Does invite acceptance require the uid';
 
 drop trigger if exists invitation_updated_at on parlour_public.invitation;
 create trigger invitation_updated_at before update
@@ -339,15 +344,15 @@ create trigger invitation_updated_at before update
 	for each row
 	execute procedure parlour_private.set_updated_at();
 
-grant select on parlour_public.invitation to parlour_user;
+grant select on parlour_public.invitation to parlour_user, parlour_postgraphile;
 alter table parlour_public.invitation enable row level security;
 create policy invitations_policy on parlour_public.invitation 
   using (email in (select email from parlour_public.users where uid = get_current_user()) or 
           parlour_uid in (select parlour_public.current_user_member_parlour_uids()) or 
-          (email is NULL and parlour_uid is NULL));
+          email = '');
 
 drop policy if exists admin_invitations_policy on parlour_public.invitation;
-create policy admin_invitations_policy on parlour_public.invitation to parlour_admin, parlour_root
+create policy admin_invitations_policy on parlour_public.invitation to parlour_admin, parlour_root, parlour_postgraphile
   using (true);
 
 -- this might need to be on the bottom of all migrations...

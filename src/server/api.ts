@@ -4,7 +4,7 @@ import {
   loginWithGoogleIdToken,
   registerWithGoogleIdToken,
 } from "./google_utils";
-import { checkAdmin } from "./parlour_db";
+import { checkAdmin, checkUserInvite, regUser } from "./parlour_db";
 import { User, ParlourRole } from "../common/types";
 
 declare global {
@@ -146,15 +146,17 @@ api.post("/auth/:idp/register", async (req, res) => {
 
   const postUser: User = req.body;
   await registerWithGoogleIdToken(req.id_token, postUser)
-    .then((user) => {
-      logger.debug("created new user: " + JSON.stringify(user));
-      user.isSignedIn = true;
-      req.session.user_id = user.uid;
+    .then((user) => checkUserInvite(user, req.query.invite as string))
+    .then((user) => regUser(user))
+    .then((cUser) => {
+      logger.debug("created new user: " + JSON.stringify(cUser));
+      cUser.isSignedIn = true;
+      req.session.user_id = cUser.uid;
       req.session.role = process.env.DB_SIGNEDIN_USER;
-      return res.json(user);
+      return res.json(cUser);
     })
     .catch((err) => {
-      logger.debug(`token invalid, err: ${err}`);
+      logger.debug(`Registration error, err: ${err}`);
       if (err == "Error: Token used too late,") {
         return errorResponse(res, 401, "Token expired");
       } else if (
@@ -167,7 +169,10 @@ api.post("/auth/:idp/register", async (req, res) => {
         err == "Error: user email doesn't match token"
       ) {
         return errorResponse(res, 409, err.toString());
+      } else if (err == "No invite found for user") {
+        return errorResponse(res, 403, "User not allowed");
+      } else {
+        return errorResponse(res, 401, "register invalid");
       }
-      return errorResponse(res, 401, "code invalid");
     });
 });

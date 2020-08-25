@@ -153,6 +153,37 @@ export const checkAdmin = (uid: string): Promise<ParlourRole> => {
   return getParlourMemberRole(uid, process.env.ADMIN_PARLOUR_UID);
 };
 
+export const checkUserInvite = async (
+  user: User,
+  invite_uid?: string
+): Promise<User> => {
+  const p = getParlourDbPool();
+  return new Promise((res, rej) => {
+    let query =
+      "select * from parlour_public.invitation where (email = $1 or email = '')";
+    let params: string[] = [user.email];
+
+    if (invite_uid) {
+      query += " and uid = $2";
+      params.push(invite_uid);
+    } else {
+      query += " and requires_uid = false";
+    }
+
+    p.query(query, params)
+      .then((result) => {
+        if (result.rows.length == 0) {
+          rej("No invite found for user");
+        }
+        res(user);
+      })
+      .catch((err) => {
+        logger.error("checkUserInvite error: " + err);
+        rej(err);
+      });
+  });
+};
+
 export const getUserByEmail = (email: string): Promise<User> => {
   const p = getParlourDbPool(process.env.DB_ADMIN_USER);
 

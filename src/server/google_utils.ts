@@ -2,7 +2,7 @@ import { google } from "googleapis";
 import { logger } from "../common/logger";
 import * as config from "../common/config";
 
-import { loginUser, regUser } from "./parlour_db";
+import { loginUser } from "./parlour_db";
 import { User, IDP } from "../common/types";
 
 /**
@@ -85,7 +85,7 @@ export const registerWithGoogleIdToken = async (
       newUser.idpId = null;
       throw error;
     });
-  return await regUser(newUser);
+  return newUser;
 };
 
 const loginWithGoogleIdToken = async (token: string) => {
