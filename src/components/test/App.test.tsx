@@ -4,6 +4,18 @@ import TestRenderer from "react-test-renderer";
 import { render, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
+// Apollo uses fetch which doesn't exist in node.js
+const realFetch = window.fetch;
+
+beforeAll(() => {
+  // Apollo uses fetch which doesn't exist in node.js
+  window.fetch = jest.fn();
+});
+
+afterAll(() => {
+  window.fetch = realFetch;
+});
+
 test("App can render correctly", () => {
   // Test first render and componentDidMount
   const component = TestRenderer.create(<App />);

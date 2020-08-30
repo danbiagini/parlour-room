@@ -96,11 +96,12 @@ comment on function parlour_public.whoami is 'Get the user object for logged in 
 grant execute on function parlour_public.whoami to parlour_user;
 
 -- Parlours
-drop type if exists parlourRole cascade;
+drop type if exists parlour_public.parlourRole cascade;
 create type parlour_public.parlourRole as enum (
   'member',
   'owner',
-  'moderator'
+  'moderator',
+  'none'
 );
 
 drop table if exists parlour_public.parlour cascade;
@@ -196,18 +197,18 @@ create trigger parlour_created after insert
 	for each row
 	execute procedure parlour_private.add_parlour_member();
 
-drop function if exists parlour_public.current_user_member_parlour_uids cascade;
-create function parlour_public.current_user_member_parlour_uids() returns setof uuid as $$
+drop function if exists parlour_public.get_current_user_member_parlour_uids cascade;
+create function parlour_public.get_current_user_member_parlour_uids() returns setof parlour_public.parlour.uid%TYPE as $$
   select parlour_uid from parlour_public.parlour_user_join 
     where user_uid = parlour_public.get_current_user();
 $$ language sql stable security definer ;
 
-grant execute on function parlour_public.current_user_member_parlour_uids to parlour_user;
+grant execute on function parlour_public.get_current_user_member_parlour_uids to parlour_user;
 
 alter table parlour_public.parlour_user_join enable row level security;
 create policy parlour_user_policy on parlour_user_join 
   using (user_uid = get_current_user() or 
-          parlour_uid in (select parlour_public.current_user_member_parlour_uids()));
+          parlour_uid in (select parlour_public.get_current_user_member_parlour_uids()));
 
 drop policy if exists admin_parlour_user_policy on parlour_user_join;
 create policy admin_parlour_user_policy on parlour_user_join to parlour_admin, parlour_root
@@ -218,6 +219,17 @@ create trigger parlour_user_updated_at before update
 	on parlour_public.parlour_user_join 
 	for each row
 	execute procedure parlour_private.set_updated_at();
+
+create or replace view parlour_public.current_user_member_parlours 
+  with (security_barrier = true) as
+  select p.uid as parlour_uid, p.*, puj.user_role, puj.user_uid
+  from parlour_public.parlour as p inner join parlour_public.parlour_user_join as puj on (p.uid = puj.parlour_uid)
+  where puj.user_uid = get_current_user();
+
+grant select on parlour_public.current_user_member_parlours to parlour_user;
+
+comment on view parlour_public.current_user_member_parlours is 
+  E'@omit update,delete\n@primaryKey parlour_uid, user_uid\n@foreignKey (parlour_uid) references parlour\n@foreignKey (user_uid) references users';
 
 -- Authentication
 drop type if exists parlour_public.identityProvider cascade;
@@ -313,6 +325,13 @@ create trigger login_session_updated_at before update
 
 
 -- invitations
+drop type if exists parlour_public.inviteStatus cascade;
+create type parlour_public.inviteStatus as enum (
+  'open',
+  'accepted',
+  'rejected'
+);
+
 drop table if exists parlour_public.invitation cascade;
 create table parlour_public.invitation (
 	uid uuid primary key default gen_random_uuid(),
@@ -322,11 +341,17 @@ create table parlour_public.invitation (
   requires_uid boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  deleted_at timestamptz,
   expires_at timestamptz,
-  description text
+  status inviteStatus not null default 'open'::inviteStatus,
+  description text,
+  is_deleted boolean not null generated always as (deleted_at is not null) stored
 );
-create unique index ON parlour_public.invitation(email, parlour_uid);
+create unique index ON parlour_public.invitation(is_deleted, email, parlour_uid);
 create index ON parlour_public.invitation(parlour_uid);
+create index ON parlour_public.invitation(creator_uid);
+create index ON parlour_public.invitation(expires_at);
+create index ON parlour_public.invitation(status);
 
 comment on table parlour_public.invitation is 'Invitations to join a parlour or register with the site';
 comment on column parlour_public.invitation.uid is 'The uid of the invitation';
@@ -336,6 +361,7 @@ comment on column parlour_public.invitation.created_at is 'Invite create time';
 comment on column parlour_public.invitation.updated_at is 'Invite last update time';
 comment on column parlour_public.invitation.expires_at is 'Invite expire time';
 comment on column parlour_public.invitation.description is 'Invite description or information to display';
+comment on column parlour_public.invitation.status is 'Invite status (open, accepted, rejected, expired)';
 comment on column parlour_public.invitation.requires_uid is 'Does invite acceptance require the uid';
 
 drop trigger if exists invitation_updated_at on parlour_public.invitation;
@@ -348,12 +374,25 @@ grant select on parlour_public.invitation to parlour_user, parlour_postgraphile;
 alter table parlour_public.invitation enable row level security;
 create policy invitations_policy on parlour_public.invitation 
   using (email in (select email from parlour_public.users where uid = get_current_user()) or 
-          parlour_uid in (select parlour_public.current_user_member_parlour_uids()) or 
-          email = '');
+          parlour_uid in (select parlour_public.get_current_user_member_parlour_uids()) or 
+          (email = '' and requires_uid = false));
 
 drop policy if exists admin_invitations_policy on parlour_public.invitation;
 create policy admin_invitations_policy on parlour_public.invitation to parlour_admin, parlour_root, parlour_postgraphile
   using (true);
+
+drop function if exists parlour_public.get_current_user_invites;
+create function parlour_public.get_current_user_invites(
+  stat inviteStatus = 'open'::inviteStatus
+) returns setof parlour_public.invitation as $$
+  select * from parlour_public.invitation
+  where is_deleted = false and (expires_at is null or expires_at > now()) and (status = stat) and 
+    ((email = '' and requires_uid = false) or
+     (email in (select email from parlour_public.users where uid = parlour_public.get_current_user())))
+$$ language sql stable;
+
+grant execute on function parlour_public.get_current_user_invites(inviteStatus) to parlour_user, parlour_postgraphile;
+comment on function parlour_public.get_current_user_invites(inviteStatus) is 'Get the current and valid invites for logged in user';
 
 -- this might need to be on the bottom of all migrations...
 grant all on all tables in schema parlour_public TO parlour_root, parlour_admin ;

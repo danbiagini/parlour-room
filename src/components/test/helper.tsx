@@ -6,6 +6,42 @@ import { store } from "../../store/index";
 import { MemoryRouter } from "react-router-dom";
 import { createStore } from "redux";
 import { appReducer, initState } from "../../store/gameReducer";
+import { MockedProvider, MockedResponse } from "@apollo/client/testing";
+import { MyParloursAndInvitesDocument } from "../../generated/graphql";
+
+const mocks: MockedResponse[] = [
+  {
+    request: {
+      query: MyParloursAndInvitesDocument,
+    },
+    result: () => {
+      return {
+        data: {
+          currentUserMemberParlours: {
+            nodes: [],
+          },
+          getCurrentUserInvites: {
+            nodes: [
+              {
+                parlourByParlourUid: {
+                  name: "Biagini's Parlour",
+                  description: "Fixture Parlour",
+                  uid: "270c4eb5-4bc0-4884-81c8-4234b48d15aa",
+                  userByCreatorUid: null,
+                  createdAt: "2020-08-30T02:18:46.089262+00:00",
+                  updatedAt: "2020-08-30T02:18:46.089262+00:00",
+                },
+                createdAt: "2020-08-30T02:18:46.098483+00:00",
+                userByCreatorUid: null,
+                expiresAt: null,
+              },
+            ],
+          },
+        },
+      };
+    },
+  },
+];
 
 interface ProviderProps {
   children?: React.ReactNode;
@@ -19,9 +55,11 @@ export const wrappedRender = (
 ) => {
   const store = createStore(appReducer, state);
   const WrapDefaultProvider = (props: ProviderProps) => (
-    <Provider store={store}>
-      <MemoryRouter initialEntries={history}>{props.children}</MemoryRouter>
-    </Provider>
+    <MockedProvider mocks={mocks}>
+      <Provider store={store}>
+        <MemoryRouter initialEntries={history}>{props.children}</MemoryRouter>
+      </Provider>
+    </MockedProvider>
   );
 
   const ret = whichRender(

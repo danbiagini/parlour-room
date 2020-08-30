@@ -131,7 +131,7 @@ const deleteDataById = async (id: string) => {
   testCreatedUsers.length = 0;
   deletes.push(
     p.query(
-      "delete from parlour_public.parlour where name like '%_id:' || $1 || '%'",
+      "delete from parlour_public.parlour where name like '%' || $1 || '%'",
       [id]
     )
   );
@@ -192,14 +192,15 @@ export const saveParlour = async (
 export const createInvitation = async (
   parlour: string,
   email: string,
-  requires_uid: boolean = true,
-  base: string = "default"
+  base: string = "default",
+  status: string = "open",
+  requires_uid: boolean = false
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     getParlourRootDbPool()
       .query(
-        "insert into parlour_public.invitation (email, parlour_uid, description, requires_uid) values ($1, $2, $3, $4) returning uid",
-        [email, parlour, base, requires_uid]
+        "insert into parlour_public.invitation (email, status, parlour_uid, description, requires_uid) values ($1, $2, $3, $4, $5) returning uid",
+        [email, status, parlour, base, requires_uid]
       )
       .then((result) => {
         console.log("created invite, uid:" + result.rows[0]["uid"]);

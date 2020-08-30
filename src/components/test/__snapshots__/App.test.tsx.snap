@@ -16,7 +16,7 @@ exports[`App can render correctly 1`] = `
       }
     >
       <button
-        className="StyledButton-sc-323bzc-0 ciOHIr"
+        className="StyledButton-sc-323bzc-0 hMRUyI"
         onBlur={[Function]}
         onClick={[Function]}
         onFocus={[Function]}
@@ -49,7 +49,7 @@ exports[`App can render correctly 1`] = `
           className="StyledBox-sc-13pk1d4-0 bIdaiR"
         >
           <button
-            className="StyledButton-sc-323bzc-0 jyjnth"
+            className="StyledButton-sc-323bzc-0 gQBDdm"
             onBlur={[Function]}
             onClick={[Function]}
             onFocus={[Function]}
@@ -63,7 +63,7 @@ exports[`App can render correctly 1`] = `
             className="StyledBox__StyledBoxGap-sc-13pk1d4-1 ffjnxm"
           />
           <button
-            className="StyledButton-sc-323bzc-0 jyjnth"
+            className="StyledButton-sc-323bzc-0 gQBDdm"
             onBlur={[Function]}
             onClick={[Function]}
             onFocus={[Function]}
@@ -181,7 +181,6 @@ exports[`App can render correctly 1`] = `
       />
       <span
         className="StyledText-sc-1sadyjn-0 btJJDp"
-        size="small"
       >
         © 2020 Copyright Three Bees
       </span>

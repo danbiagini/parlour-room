@@ -22,6 +22,7 @@ import {
   saveParlour,
   createInvitation,
   testParlours,
+  DB_ADMIN_USER,
 } from "./helper";
 
 const testId = "user-parlour.test";
@@ -238,7 +239,7 @@ describe("grant restrictions on users and parlours ", () => {
     );
   });
 
-  it("user can query for their parlours", async (done) => {
+  it("user can query for their parlours using the join table", async (done) => {
     await createUsers(2, testId);
     await createParlours(2, testId, 1);
     await createParlours(2, testId, 0);
@@ -257,14 +258,31 @@ describe("grant restrictions on users and parlours ", () => {
     done();
   });
 
-  it("user can query for their invites", async (done) => {
+  it("user can query for their parlours using the view", async (done) => {
+    await createUsers(2, testId);
+    await createParlours(2, testId, 1);
+    await createParlours(2, testId, 0);
+
+    const result = await poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_SIGNEDIN_USER,
+      testCreatedUsers[1].uid
+    ).query(`select * from parlour_public.current_user_member_parlours`);
+    expect(result.rows.length).toEqual(2);
+    expect(result.rows[0]["user_uid"]).toEqual(testCreatedUsers[1].uid);
+    expect(result.rows[1]["user_uid"]).toEqual(testCreatedUsers[1].uid);
+    done();
+  });
+
+  it("user can query for their invites on table", async (done) => {
     await createUsers(2, testId);
     await createParlours(2, testId, 0);
     await createInvitation(
       testParlours[0].uid,
       testCreatedUsers[0].email,
-      true,
-      testId
+      testId,
+      "open",
+      true
     ).catch((err) => {
       console.log(
         `error: ${err}; couldn't create invitation for parlour ${testParlours[0].uid} and user ${testCreatedUsers[0].email}`
@@ -282,6 +300,7 @@ describe("grant restrictions on users and parlours ", () => {
     expect(result.rows.length).toEqual(1);
     expect(result.rows[0]["parlour_uid"]).toEqual(testParlours[0].uid);
 
+    // user [1] won't have any invites and shouldn't get any on the select with no constraints
     const res2 = await poolFromUrl(
       TEST_DATABASE_URL,
       process.env.DB_SIGNEDIN_USER,
@@ -289,6 +308,85 @@ describe("grant restrictions on users and parlours ", () => {
     ).query(
       `select * from parlour_public.invitation where description = '${testId}'`
     );
+    expect(res2.rows.length).toEqual(0);
+    done();
+  });
+
+  it("user can query for their invites via get_current_user_invites", async (done) => {
+    await createUsers(2, testId);
+    await createParlours(3, testId, 0);
+
+    // create 3 invites, 1 with status 'open', 1 "accepted" and 1 is_deleted = true
+    await createInvitation(
+      testParlours[0].uid,
+      testCreatedUsers[0].email,
+      testId,
+      "open",
+      true
+    )
+      .then(() => {
+        createInvitation(
+          testParlours[1].uid,
+          testCreatedUsers[0].email,
+          testId,
+          "accepted",
+          true
+        );
+      })
+      .then(() => {
+        return createInvitation(
+          testParlours[2].uid,
+          testCreatedUsers[1].email,
+          testId
+        );
+      })
+      .then((uid) => {
+        poolFromUrl(
+          TEST_DATABASE_URL,
+          DB_ADMIN_USER
+        ).query(
+          "update parlour_public.invitation set deleted_at = now() where uid = $1",
+          [uid]
+        );
+      })
+      .then(() => {
+        // create another invite for user [1] with an expired invite, shouldn't get returned
+        return createInvitation(
+          testParlours[0].uid,
+          testCreatedUsers[1].email,
+          testId
+        );
+      })
+      .then((uid) => {
+        poolFromUrl(
+          TEST_DATABASE_URL,
+          DB_ADMIN_USER
+        ).query(
+          "update parlour_public.invitation set expires_at = now() - interval '1 minute' where uid = $1",
+          [uid]
+        );
+      })
+      .catch((err) => {
+        console.log(
+          `error: ${err}; couldn't create invitation for parlour ${testParlours[0].uid} and user ${testCreatedUsers[0].email}`
+        );
+        throw err;
+      });
+
+    const result = await poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_SIGNEDIN_USER,
+      testCreatedUsers[0].uid
+    ).query(`select * from parlour_public.get_current_user_invites()`);
+    expect(result.rows.length).toEqual(1);
+    expect(result.rows[0]["parlour_uid"]).toEqual(testParlours[0].uid);
+
+    // user [1] won't have any open/valid invites and shouldn't get any on the select with no constraints
+    const res2 = await poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_SIGNEDIN_USER,
+      testCreatedUsers[1].uid
+    ).query(`select * from parlour_public.get_current_user_invites()`);
     expect(res2.rows.length).toEqual(0);
     done();
   });

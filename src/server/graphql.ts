@@ -68,7 +68,7 @@ if (process.env.NODE_ENV !== "production") {
       "line",
       "routine",
     ],
-    exportGqlSchemaPath: "schema.graphql",
+    exportGqlSchemaPath: "src/generated/schema.graphql",
     graphiqlRoute: "/graphiql",
     graphiql: true,
     enhanceGraphiql: true,

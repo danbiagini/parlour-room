@@ -1,0 +1,19 @@
+overwrite: true
+schema: "src/generated/schema.graphql"
+documents: "src/**/*.graphql"
+generates:
+  src/generated/graphql.tsx:
+    plugins:
+      - add:
+          placement: prepend
+          content: "/* eslint-disable */"
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-apollo"
+    config:
+      namingConvention: change-case#pascalCase
+      withHOC: false
+      withComponent: false
+      withMutationFn: false
+      withHooks: true
+      reactApolloVersion: 3

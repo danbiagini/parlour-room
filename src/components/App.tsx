@@ -5,7 +5,7 @@ import { NavBarUI } from "./NavBarUI";
 import { AppFooter } from "./Footer";
 import { store } from "../store/index";
 import Routes from "./Routes";
-
+import { ApolloProvider, ApolloClient, InMemoryCache } from "@apollo/client";
 import { Box, Grommet, grommet } from "grommet";
 import { deepMerge } from "grommet/utils";
 
@@ -30,15 +30,21 @@ const theme = deepMerge(grommet, {
 });
 
 const App: React.FC = () => {
+  const client = new ApolloClient({
+    uri: "/graphql",
+    cache: new InMemoryCache(),
+  });
   return (
     <Grommet theme={theme} themeMode="light">
       <Box fill flex>
         <BrowserRouter>
-          <Provider store={store}>
-            <NavBarUI />
-            <Routes />
-            <AppFooter />
-          </Provider>
+          <ApolloProvider client={client}>
+            <Provider store={store}>
+              <NavBarUI />
+              <Routes />
+              <AppFooter />
+            </Provider>
+          </ApolloProvider>
         </BrowserRouter>
       </Box>
     </Grommet>

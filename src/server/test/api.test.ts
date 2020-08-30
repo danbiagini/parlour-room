@@ -374,9 +374,7 @@ describe("Auth register API", () => {
       name: `Null Parlour id:${testId}`,
       description: "test null parlour",
       creator_uid: signedInUser.uid,
-    }).then((par) =>
-      createInvitation(par.uid, signedInUser.email, false, testId)
-    );
+    }).then((par) => createInvitation(par.uid, signedInUser.email, testId));
 
     const dup = Object.assign({}, testUserToken);
     dup["email"] = signedInUser.email;
@@ -405,7 +403,7 @@ describe("Auth register API", () => {
       name: `Null Parlour id:${testId}`,
       description: "test null parlour",
       creator_uid: testUser.uid,
-    }).then((par) => createInvitation(par.uid, "", false, testId));
+    }).then((par) => createInvitation(par.uid, "", testId));
 
     let sid: string = undefined;
     let uid: string = undefined;
@@ -457,7 +455,7 @@ describe("Auth register API", () => {
       description: "test null parlour",
       creator_uid: testUser.uid,
     })
-      .then((par) => createInvitation(par.uid, "", true, testId))
+      .then((par) => createInvitation(par.uid, "", testId, "open", true))
       .then((uid) => {
         invite = uid;
       });

@@ -168,9 +168,7 @@ describe("Signup with google", () => {
     const submit = screen.getByRole("button", { name: "Submit" });
     fireEvent.click(submit);
     await waitFor(() => {
-      expect(
-        screen.getByText("Hello Dan, you're signed in")
-      ).toBeInTheDocument();
+      expect(screen.getByText("Welcome Dan!")).toBeInTheDocument();
     });
   });
 

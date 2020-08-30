@@ -7,6 +7,7 @@ import { Login } from "./Login";
 import Game from "./Game";
 import Privacy from "./Privacy";
 import { SignUp } from "./SignUp";
+import NoInvite from "./NoInvite";
 
 export default function Routes() {
   return (
@@ -22,6 +23,9 @@ export default function Routes() {
       </Route>
       <Route exact path="/">
         <Home />
+      </Route>
+      <Route exact path="/no_invite">
+        <NoInvite />
       </Route>
       <Route exact path="/privacy">
         <Privacy />

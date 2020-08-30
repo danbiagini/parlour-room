@@ -22,15 +22,18 @@ import { Alert } from "./Alert";
 import { Spinner } from "./Spinner";
 import { RootState } from "../store/index";
 import { Halt, Edit, Clear, User as UserAvatar } from "grommet-icons";
-import GoogleLogin, { GoogleLoginResponse } from "react-google-login";
+import GoogleLogin, {
+  GoogleLoginResponse,
+  useGoogleLogout,
+} from "react-google-login";
 import { User, IDP } from "../common/types";
-import { signinIdp } from "../store/actions";
+import { signinIdp, signoutIdp } from "../store/actions";
 import Auth from "./Auth";
 import { clientLogger } from "../common/clientLogger";
 
 export const SignUp: React.FC = () => {
   const isSignedIn = useSelector((state: RootState) => state.user.isSignedIn);
-  const currentUser = useSelector((state: RootState) => state.user);
+  const currentUser: User = useSelector((state: RootState) => state.user);
   const idpToken = useSelector((state: RootState) => state.idp_token);
   const [redirect, setRedirect] = useState<string>(undefined);
   const [formUser, setFormUser] = useState(Object.assign({}, currentUser));
@@ -39,8 +42,10 @@ export const SignUp: React.FC = () => {
   const showHelp = false; // TODO add a button or something
   const dispatch = useDispatch();
   const auth = new Auth();
-
   const idpId = currentUser.idpId;
+  const { signOut } = useGoogleLogout({
+    clientId: config.googleConfig.clientId,
+  });
 
   useEffect(() => {
     if (!isSignedIn) {
@@ -98,10 +103,15 @@ export const SignUp: React.FC = () => {
           setRedirect("/");
         } else if (response.code == 403) {
           setRedirect("/no_invite");
+        } else if (response.code == 401) {
+          signOut(); // signout from google too
+          dispatch(signoutIdp());
         }
       })
       .catch((err) => {
         clientLogger.log("ERROR", "Error registering new user:" + err);
+        signOut(); // signout from google too
+        dispatch(signoutIdp());
         setRedirect("/error_page");
       });
   };
@@ -169,7 +179,7 @@ export const SignUp: React.FC = () => {
         <Heading level={3}>Register new user</Heading>
         <Form
           value={formUser}
-          onChange={(nextValue) => setFormUser(nextValue)}
+          onChange={(nextValue: User) => setFormUser(nextValue)}
           onSubmit={submitRegForm}
           validate="blur"
         >

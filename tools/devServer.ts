@@ -9,6 +9,10 @@ const bundler = new Bundler(entry, {
   cache: false,
 });
 
+bundler.on("buildStart", () => {
+  console.log("generating new build");
+});
+
 const app = express();
 const API_PORT = process.env.PORT || 8080;
 const PORT = 1234;

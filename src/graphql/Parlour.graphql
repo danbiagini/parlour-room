@@ -1,0 +1,31 @@
+fragment ParlourFields on Parlour {
+  name
+  description
+  uid
+  creatorUid
+  createdAt
+  updatedAt
+}
+
+query myParloursAndInvites {
+  currentUserMemberParlours {
+    nodes {
+      userRole
+      parlourByParlourUid {
+        ...ParlourFields
+      }
+    }
+  }
+  getCurrentUserInvites {
+    nodes {
+      parlourByParlourUid {
+        ...ParlourFields
+      }
+      createdAt
+      userByCreatorUid {
+        fullName
+      }
+      expiresAt
+    }
+  }
+}

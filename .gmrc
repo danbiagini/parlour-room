@@ -109,11 +109,12 @@
        "shadow": false,
        //"command": "if [ \"$IN_TESTS\" = \"1\" ]; then ./scripts/test-seed; fi",
        "command": "d=$(date); echo \"export const ts = '$d'; \n\" > src/db/test/jest.watch.hack.ts"
-    }
-    //{
-    //  "_": "command",
-    //  "shadow": false,
-    //  "command": "npx ts-node tools/dbFixtures.ts users --count 10"},
+    },
+    {
+      "_": "command",
+      "shadow": false,
+      "command": "npx ts-node tools/dbFixtures.ts parlour --name \"Biagini's Parlour\" --with_email_invite \"dbiagini@gmail.com\" ",
+    },
   ],
 
   /*
