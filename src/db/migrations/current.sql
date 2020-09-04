@@ -10,6 +10,17 @@ alter default privileges revoke execute on functions from public, parlour_anonym
 grant usage on schema parlour_public to parlour_anonymous, parlour_user, parlour_postgraphile, parlour_admin, parlour_root;
 grant usage on schema parlour_private to parlour_admin, parlour_root, parlour_postgraphile;
 
+CREATE or replace FUNCTION debug_me(text) RETURNS boolean AS
+$$
+BEGIN
+    RAISE NOTICE 'called as session_user=%, current_user=% for "%" ', 
+        session_user, current_user, $1;
+    RETURN true;
+END;
+$$ LANGUAGE 'plpgsql';
+ 
+GRANT ALL ON FUNCTION debug_me to parlour_user, parlour_postgraphile;
+
 drop function if exists parlour_public.set_updated_at cascade;
 create or replace function parlour_private.set_updated_at() returns trigger as $$
 begin
@@ -24,10 +35,11 @@ create or replace function parlour_public.get_current_user() returns uuid as $$
 $$ language sql stable;
 grant execute on function parlour_public.get_current_user() to parlour_user, parlour_postgraphile;
 
-drop function if exists parlour_public.check_email() cascade;
+drop function if exists parlour_public.check_email(text) cascade;
 create or replace function parlour_public.check_email(email text) returns boolean as $$
   select ((char_length(email) < 320) AND (email ~ '^[a-zA-Z0-9.!#$%&''*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'));
 $$ language sql stable;
+grant execute on function parlour_public.check_email(text) to parlour_user, parlour_postgraphile;
 
 -- User stuff
 drop table if exists parlour_public.users cascade;
@@ -96,8 +108,8 @@ comment on function parlour_public.whoami is 'Get the user object for logged in 
 grant execute on function parlour_public.whoami to parlour_user;
 
 -- Parlours
-drop type if exists parlour_public.parlourRole cascade;
-create type parlour_public.parlourRole as enum (
+drop type if exists parlour_public.parlour_role_t cascade;
+create type parlour_public.parlour_role_t as enum (
   'member',
   'owner',
   'moderator',
@@ -133,11 +145,11 @@ create trigger parlour_updated_at before update
 	for each row
 	execute procedure parlour_private.set_updated_at();
 
-drop table if exists parlour_public.parlour_user_join;
+drop table if exists parlour_public.parlour_user_join cascade;
 create table parlour_public.parlour_user_join (
   parlour_uid uuid not null references parlour_public.parlour(uid) on delete cascade,
   user_uid uuid not null references parlour_public.users(uid) on delete cascade,
-  user_role parlourRole not null,
+  user_role parlour_role_t not null check (user_role != 'none'),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint parlour_user unique (parlour_uid, user_uid)
@@ -151,17 +163,12 @@ comment on column parlour_public.parlour_user_join.user_role is 'User''s role in
 comment on column parlour_public.parlour_user_join.created_at is 'Time this parlour membership was created';
 comment on column parlour_public.parlour_user_join.updated_at is 'Time this parlour membership was last updated';
 
-grant select on table parlour_public.parlour_user_join to parlour_user;
+grant select, insert on table parlour_public.parlour_user_join to parlour_user;
 
-drop function if exists parlour_public.add_parlour_member(
-  parlour parlour_public.parlour.uid%TYPE, 
-  pUser parlour_public.users.uid%TYPE, 
-  pRole parlour_public.parlourRole);
-
-create function parlour_public.add_parlour_member(
+create or replace function parlour_public.add_parlour_member(
   pParlour parlour_public.parlour.uid%TYPE, 
   pUser parlour_public.users.uid%TYPE,
-  pRole parlour_public.parlourRole
+  pRole parlour_public.parlour_role_t
   ) returns void as $$
 declare maxMembers parlour_public.parlour.max_members%TYPE;
 declare currentMembers parlour_public.parlour.max_members%TYPE;
@@ -179,13 +186,15 @@ begin
   insert into parlour_public.parlour_user_join (parlour_uid, user_uid, user_role) 
     values (pParlour, pUser, pRole);
 end
-$$ language plpgsql volatile security definer ;
+$$ language plpgsql volatile ;
+
+grant execute on function parlour_public.add_parlour_member(parlour_public.parlour.uid%TYPE, parlour_public.users.uid%TYPE, parlour_public.parlour_role_t) to parlour_user;
 
 drop function if exists parlour_private.add_parlour_member();
 create function parlour_private.add_parlour_member() returns trigger as $$
 begin
   if NEW.creator_uid is not null then
-    perform parlour_public.add_parlour_member(NEW.uid, NEW.creator_uid, 'owner'::parlour_public.parlourRole);
+    perform parlour_public.add_parlour_member(NEW.uid, NEW.creator_uid, 'owner'::parlour_public.parlour_role_t);
   end if;
   return null;
 end
@@ -197,6 +206,20 @@ create trigger parlour_created after insert
 	for each row
 	execute procedure parlour_private.add_parlour_member();
 
+drop type if exists parlour_public.parlour_member_t cascade;
+create type parlour_public.parlour_member_t as (
+  parlour_uid  uuid,
+  user_uid     uuid,
+  user_role    parlour_role_t
+);
+
+create or replace function parlour_public.get_current_user_parlour_membership() returns setof parlour_member_t as $$
+    select parlour_uid, user_uid, user_role from parlour_public.parlour_user_join 
+    where user_uid = parlour_public.get_current_user();
+$$ language sql stable;
+
+grant execute on function parlour_public.get_current_user_parlour_membership to parlour_user;
+
 drop function if exists parlour_public.get_current_user_member_parlour_uids cascade;
 create function parlour_public.get_current_user_member_parlour_uids() returns setof parlour_public.parlour.uid%TYPE as $$
   select parlour_uid from parlour_public.parlour_user_join 
@@ -206,9 +229,13 @@ $$ language sql stable security definer ;
 grant execute on function parlour_public.get_current_user_member_parlour_uids to parlour_user;
 
 alter table parlour_public.parlour_user_join enable row level security;
-create policy parlour_user_policy on parlour_user_join 
+create policy parlour_user_select_policy on parlour_user_join for select 
   using (user_uid = get_current_user() or 
           parlour_uid in (select parlour_public.get_current_user_member_parlour_uids()));
+
+drop policy if exists parlour_owner_update_policy on parlour_public.parlour_user_join;
+create policy parlour_owner_update_policy on parlour_public.parlour_user_join for update
+  using ((parlour_uid, 'owner'::parlour_public.parlour_role_t) in (select parlour_uid, user_role from parlour_public.get_current_user_parlour_membership()));
 
 drop policy if exists admin_parlour_user_policy on parlour_user_join;
 create policy admin_parlour_user_policy on parlour_user_join to parlour_admin, parlour_root
@@ -353,7 +380,7 @@ create index ON parlour_public.invitation(creator_uid);
 create index ON parlour_public.invitation(expires_at);
 create index ON parlour_public.invitation(status);
 
-comment on table parlour_public.invitation is 'Invitations to join a parlour or register with the site';
+comment on table parlour_public.invitation is 'Invitations to join a parlour or register with the site.';
 comment on column parlour_public.invitation.uid is 'The uid of the invitation';
 comment on column parlour_public.invitation.email is 'Email address of the invited user';
 comment on column parlour_public.invitation.parlour_uid is 'Invite for which Parlour';
@@ -362,7 +389,7 @@ comment on column parlour_public.invitation.updated_at is 'Invite last update ti
 comment on column parlour_public.invitation.expires_at is 'Invite expire time';
 comment on column parlour_public.invitation.description is 'Invite description or information to display';
 comment on column parlour_public.invitation.status is 'Invite status (open, accepted, rejected, expired)';
-comment on column parlour_public.invitation.requires_uid is 'Does invite acceptance require the uid';
+comment on column parlour_public.invitation.requires_uid is 'WHen true an invite acceptance requires lookup via the uid?  Only used when email column is empty';
 
 drop trigger if exists invitation_updated_at on parlour_public.invitation;
 create trigger invitation_updated_at before update
@@ -370,8 +397,9 @@ create trigger invitation_updated_at before update
 	for each row
 	execute procedure parlour_private.set_updated_at();
 
-grant select on parlour_public.invitation to parlour_user, parlour_postgraphile;
+grant select, update on parlour_public.invitation to parlour_user, parlour_postgraphile;
 alter table parlour_public.invitation enable row level security;
+
 create policy invitations_policy on parlour_public.invitation 
   using (email in (select email from parlour_public.users where uid = get_current_user()) or 
           parlour_uid in (select parlour_public.get_current_user_member_parlour_uids()) or 
@@ -393,6 +421,30 @@ $$ language sql stable;
 
 grant execute on function parlour_public.get_current_user_invites(inviteStatus) to parlour_user, parlour_postgraphile;
 comment on function parlour_public.get_current_user_invites(inviteStatus) is 'Get the current and valid invites for logged in user';
+
+-- policy relies on get_current_user_invites
+drop policy if exists parlour_add_user_policy on parlour_public.parlour_user_join;
+create policy parlour_add_user_policy on parlour_public.parlour_user_join for insert
+ with check (parlour_uid in (select parlour_uid from parlour_public.get_current_user_invites('open')));
+
+create or replace function parlour_public.resolve_invite(
+  aUid parlour_public.invitation.uid%TYPE, 
+  stat parlour_public.inviteStatus
+) returns parlour_public.inviteStatus as $$
+declare invite parlour_public.invitation;
+begin
+  select * into invite from parlour_public.invitation where uid = aUid;
+  if (stat = 'accepted') then
+    perform parlour_public.add_parlour_member(invite.parlour_uid, parlour_public.get_current_user(), 'member');
+    -- insert into parlour_public.parlour_user_join (parlour_uid, user_uid, user_role) values (invite.parlour_uid, parlour_public.get_current_user(), 'member');
+  end if;
+  update parlour_public.invitation set status = stat where uid = aUid;
+  return stat;
+end;
+$$ language plpgsql volatile;
+
+grant execute on function parlour_public.resolve_invite(parlour_public.invitation.uid%TYPE, inviteStatus) to parlour_user;
+comment on function parlour_public.resolve_invite(parlour_public.invitation.uid%TYPE, inviteStatus) is 'Accept or reject an invite by invite uid';
 
 -- this might need to be on the bottom of all migrations...
 grant all on all tables in schema parlour_public TO parlour_root, parlour_admin ;

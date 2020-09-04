@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Box, Carousel } from "grommet";
-import { MyParloursAndInvitesQuery, Parlourrole } from "../generated/graphql";
+import { MyParloursAndInvitesQuery, ParlourRoleT } from "../generated/graphql";
 import { ParlourCard } from "./ParlourCard";
 
 interface ParlourCarouselProps {
@@ -13,7 +13,7 @@ export const ParlourCarousel: React.FC<ParlourCarouselProps> = (
   const cards = props.parlours.getCurrentUserInvites.nodes.map((p) => {
     return (
       <ParlourCard
-        role={Parlourrole.None}
+        role={ParlourRoleT.None}
         key={p.parlourByParlourUid.uid}
         parlour={p.parlourByParlourUid}
       />

@@ -12,12 +12,12 @@ import {
   Button,
 } from "grommet";
 import { FormCheckmark, FormClose, FormView } from "grommet-icons";
-import { ParlourFieldsFragment, Parlourrole } from "../generated/graphql";
+import { ParlourFieldsFragment, ParlourRoleT } from "../generated/graphql";
 import parlourPic from "../public/victorian1.jpg";
 
 interface ParlourCardProps {
   parlour: ParlourFieldsFragment;
-  role?: Parlourrole;
+  role?: ParlourRoleT;
 }
 
 export const ParlourCard: React.FC<ParlourCardProps> = (

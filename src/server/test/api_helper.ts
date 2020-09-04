@@ -91,7 +91,7 @@ export const login = async (
         const now = Date.now();
         expect(new Date(res.body.lastSignin).valueOf()).toBeWithin(
           now.valueOf() - 3000,
-          now.valueOf()
+          now.valueOf() + 3000
         );
         resolve(agent);
       });

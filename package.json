@@ -37,7 +37,7 @@
   },
   "scripts-comments": {
     "dev:client": "this starts the poorly named tools/devServer which hosts the react app and reloads on changes automatically",
-    "styled-components-hack-fix": "echo 'won''t be needed after this https://github.com/DefinitelyTyped/DefinitelyTyped/pull/46997 '"
+    "styled-components-hack-fix": "won't be needed after this https://github.com/DefinitelyTyped/DefinitelyTyped/pull/46997 "
   },
   "repository": {
     "type": "git",

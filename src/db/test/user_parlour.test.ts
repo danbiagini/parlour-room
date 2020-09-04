@@ -35,12 +35,12 @@ afterAll(async (done) => {
 });
 
 beforeEach(async (done) => {
+  await deleteTestData(testId);
   await createUsers(1, testId, IDP.GOOGLE);
   done();
 });
 
 afterEach(async (done) => {
-  await deleteTestData(testId);
   done();
 });
 
@@ -388,6 +388,254 @@ describe("grant restrictions on users and parlours ", () => {
       testCreatedUsers[1].uid
     ).query(`select * from parlour_public.get_current_user_invites()`);
     expect(res2.rows.length).toEqual(0);
+    done();
+  });
+
+  it("user can accept an invite with email", async (done) => {
+    expect.hasAssertions();
+    await createUsers(2, testId);
+    await createParlours(3, testId, 0);
+
+    // create an invite for user [1]
+    const invite_uid = await createInvitation(
+      testParlours[0].uid,
+      testCreatedUsers[1].email,
+      testId,
+      "open",
+      true
+    );
+
+    // console.log(
+    //   "created invite for email:" +
+    //     testCreatedUsers[1].email +
+    //     ", invite uid:" +
+    //     invite_uid
+    // );
+
+    const res = await poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_SIGNEDIN_USER,
+      testCreatedUsers[1].uid
+    ).query(`select parlour_public.resolve_invite($1, 'accepted')`, [
+      invite_uid,
+    ]);
+
+    expect(res.rows.length).toEqual(1);
+    expect(res.rows[0]["resolve_invite"]).toEqual("accepted");
+    done();
+  });
+
+  it("user can't accept an invite with no email set and requires_uid = true", async (done) => {
+    await createUsers(2, testId);
+    await createParlours(3, testId, 0);
+
+    // create an invite for user [1]
+    const invite_uid = await createInvitation(
+      testParlours[0].uid,
+      "",
+      testId,
+      "open",
+      true
+    );
+
+    await expect(
+      poolFromUrl(
+        TEST_DATABASE_URL,
+        process.env.DB_SIGNEDIN_USER,
+        testCreatedUsers[1].uid
+      ).query(`select parlour_public.resolve_invite($1, 'accepted')`, [
+        invite_uid,
+      ])
+    ).rejects.toThrow(
+      'new row violates row-level security policy for table "parlour_user_join"'
+    );
+
+    done();
+  });
+
+  it("user can reject an invite", async (done) => {
+    expect.hasAssertions();
+    await createUsers(2, testId);
+    await createParlours(3, testId, 0);
+
+    // create an invite for user [1]
+    const invite_uid = await createInvitation(
+      testParlours[0].uid,
+      testCreatedUsers[1].email,
+      testId,
+      "open",
+      true
+    );
+
+    // reject the invite
+    let res = await poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_SIGNEDIN_USER,
+      testCreatedUsers[1].uid
+    ).query(`select parlour_public.resolve_invite($1, 'rejected')`, [
+      invite_uid,
+    ]);
+
+    expect(res.rows.length).toEqual(1);
+    expect(res.rows[0]["resolve_invite"]).toEqual("rejected");
+
+    // make sure it no longer shows up in the users invite list
+    res = await poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_SIGNEDIN_USER,
+      testCreatedUsers[1].uid
+    ).query(`select * from parlour_public.get_current_user_invites()`);
+    expect(res.rows.length).toEqual(0);
+
+    // also user shouldn't now be a member of the parlour since invite was rejected
+    res = await poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_SIGNEDIN_USER,
+      testCreatedUsers[1].uid
+    ).query(
+      `select * from parlour_public.get_current_user_parlour_membership()`
+    );
+    expect(res.rows.length).toEqual(0);
+    done();
+  });
+
+  it("user can't accept an invite for a different user", async (done) => {
+    expect.hasAssertions();
+    await createUsers(3, testId);
+    await createParlours(3, testId, 0);
+
+    // create an invite for user [1]
+    const invite_uid = await createInvitation(
+      testParlours[0].uid,
+      testCreatedUsers[1].email,
+      testId,
+      "open",
+      true
+    );
+
+    // have user [2] try to accept the invite, it should fail
+    await expect(
+      poolFromUrl(
+        TEST_DATABASE_URL,
+        process.env.DB_SIGNEDIN_USER,
+        testCreatedUsers[2].uid
+      ).query(`select parlour_public.resolve_invite($1, 'accepted')`, [
+        invite_uid,
+      ])
+    ).rejects.toThrowError(
+      'new row violates row-level security policy for table "parlour_user_join"'
+    );
+    done();
+  });
+
+  it("user can't accept an invite that's expired", async (done) => {
+    expect.hasAssertions();
+    await createUsers(2, testId);
+    await createParlours(1, testId, 0);
+
+    const p = poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_SIGNEDIN_USER,
+      testCreatedUsers[1].uid
+    );
+
+    // create an invite for user [1]
+    const invite_uid = await createInvitation(
+      testParlours[0].uid,
+      testCreatedUsers[1].email,
+      testId,
+      "open",
+      true
+    ).then((uid) => {
+      getParlourRootDbPool().query(
+        `update parlour_public.invitation set expires_at = now() - interval '1 minute' where uid = $1`,
+        [uid]
+      );
+      return uid;
+    });
+
+    // have user [1] try to accept the invite, it should fail due to expired
+    await expect(
+      p.query(`select parlour_public.resolve_invite($1, 'accepted')`, [
+        invite_uid,
+      ])
+    ).rejects.toThrowError(
+      'new row violates row-level security policy for table "parlour_user_join"'
+    );
+    done();
+  });
+
+  it("user can't accept an invite that's marked deleted", async (done) => {
+    expect.hasAssertions();
+    await createUsers(2, testId);
+    await createParlours(1, testId, 0);
+
+    const p = poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_SIGNEDIN_USER,
+      testCreatedUsers[1].uid
+    );
+
+    // create an invite for user [1]
+    const invite_uid = await createInvitation(
+      testParlours[0].uid,
+      testCreatedUsers[1].email,
+      testId,
+      "open",
+      true
+    ).then((uid) => {
+      getParlourRootDbPool().query(
+        `update parlour_public.invitation set deleted_at = now() - interval '1 minute' where uid = $1`,
+        [uid]
+      );
+      return uid;
+    });
+
+    // have user [1] try to accept the invite, it should fail due to expired
+    await expect(
+      p.query(`select parlour_public.resolve_invite($1, 'accepted')`, [
+        invite_uid,
+      ])
+    ).rejects.toThrowError(
+      'new row violates row-level security policy for table "parlour_user_join"'
+    );
+    done();
+  });
+
+  it("user can't accept an invite when exceeds max parlour members", async (done) => {
+    expect.hasAssertions();
+    await createUsers(2, testId);
+    await createParlours(1, testId, 0);
+
+    const p = poolFromUrl(
+      TEST_DATABASE_URL,
+      process.env.DB_SIGNEDIN_USER,
+      testCreatedUsers[1].uid
+    );
+
+    // create an invite for user [1]
+    const invite_uid = await createInvitation(
+      testParlours[0].uid,
+      testCreatedUsers[1].email,
+      testId,
+      "open",
+      true
+    ).then((uid) => {
+      getParlourRootDbPool().query(
+        `update parlour_public.parlour set max_members = 0 where uid = $1`,
+        [testParlours[0].uid]
+      );
+      return uid;
+    });
+
+    // have user [1] try to accept the invite, it should fail due to expired
+    await expect(
+      p.query(`select parlour_public.resolve_invite($1, 'accepted')`, [
+        invite_uid,
+      ])
+    ).rejects.toThrowError(
+      `parlour '${testParlours[0].uid}' can not have any members`
+    );
     done();
   });
 

@@ -105,3 +105,4 @@ dist
 
 # Mac OS finder file
 .DS_Store
+src/generated/graphql.tsx

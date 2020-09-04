@@ -118,7 +118,9 @@ describe("Auth login API", () => {
   });
 
   it("returns 403 on missing user", async () => {
-    mockedGetPayload.mockReturnValueOnce(testUserToken);
+    const missingUser = Object.assign({}, testUser);
+    missingUser.idpId = "missing-user-" + testId;
+    mockedGetPayload.mockReturnValueOnce(validToken(missingUser));
     const myTicket: LoginTicket = new LoginTicket();
     mockedVerifyIdToken.mockResolvedValueOnce(myTicket);
 
@@ -149,7 +151,8 @@ describe("Auth login API", () => {
         /parlourSession=.*; Path=\/; Expires=.*; HttpOnly; SameSite=Strict/
       )
       .expect((res) => {
-        res.body.lastSignin = new Date(res.body.lastSignin);
+        // res.body.lastSignin = new Date(res.body.lastSignin);
+        delete signedInUser.lastSignin;
         expect(res.body).toMatchObject(signedInUser);
         sid =
           cookieParser.signedCookie(
