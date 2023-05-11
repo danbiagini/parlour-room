@@ -1,5 +1,9 @@
 # pandemic-parlour
 
+An ambitious unfinished social / gaming web app project that includes a backend for creating "parlour rooms", inviting friends to the rooms and playing games with those friends.
+
+
+
 References:
 
 [Phaser3 w/ express and socket] (<https://www.freecodecamp.org/news/how-to-build-a-multiplayer-card-game-with-phaser-3-express-and-socket-io/)>
